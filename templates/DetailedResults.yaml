@@ -1,0 +1,66 @@
+// Do not change CxKeys
+CxKeys:
+	CxXMLResults.@ProjectId: _KeyProjectId
+	CxXMLResults.@ScanId: _KeyScanId
+	CxXMLResults.@ScanStart: _KeyScanStart
+	CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: _KeySimilarityId
+	CxXMLResults.Query.~nn.Result.~rr.@FileName: _KeyFileName
+    CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Name: _KeyNode
+CxHeader:
+	CxXMLResults.@InitiatorName: InitiatorName
+	CxXMLResults.@Owner: Owner
+	CxXMLResults.@ScanId: ScanId
+	CxXMLResults.@ProjectId: ProjectId
+	CxXMLResults.@ProjectName: ProjectName
+	CxXMLResults.@TeamFullPathOnReportDate: FullTeam
+	CxXMLResults.@DeepLink: DeepLink
+	CxXMLResults.@ScanStart: ScanStart
+	CxXMLResults.@Preset: Preset
+	CxXMLResults.@ScanTime: ScanTime
+	CxXMLResults.@LinesOfCodeScanned: LOC
+	CxXMLResults.@FilesScanned: FilesScanned
+	CxXMLResults.@ReportCreationTime: ReportCreated
+	CxXMLResults.@Team: Team
+	CxXMLResults.@CheckmarxVersion: Version
+	CxXMLResults.@ScanComments: ScanComments
+	CxXMLResults.@ScanType: ScanType
+	CxXMLResults.@SourceOrigin: Source
+	CxXMLResults.@Visibility: Visibility
+CxQuery:
+	CxXMLResults.Query.~nn.@id: QueryId
+	CxXMLResults.Query.~nn.@categories: Categories
+	CxXMLResults.Query.~nn.@cweId: CWE_ID
+	CxXMLResults.Query.~nn.@name: Query_Name
+	CxXMLResults.Query.~nn.@group: Query_Group
+	CxXMLResults.Query.~nn.@Severity: Severity
+	CxXMLResults.Query.~nn.@Language: Language
+	CxXMLResults.Query.~nn.@LanguageHash: Language_Hash
+	CxXMLResults.Query.~nn.@LanguageChangeDate: Language_Change_Date
+	CxXMLResults.Query.~nn.@SeverityIndex: Severity_Index
+	CxXMLResults.Query.~nn.@QueryPath: Query_Path
+	CxXMLResults.Query.~nn.@QueryVersionCode: Query_Version_Code
+CxResult:
+	CxXMLResults.Query.~nn.Result.~rr.@NodeId: NodeId
+	CxXMLResults.Query.~nn.Result.~rr.@FileName: FileName
+	CxXMLResults.Query.~nn.Result.~rr.@Status: Status
+	CxXMLResults.Query.~nn.Result.~rr.@Line: Line
+	CxXMLResults.Query.~nn.Result.~rr.@Column: Column
+	CxXMLResults.Query.~nn.Result.~rr.@FalsePositive: False_Positive
+	CxXMLResults.Query.~nn.Result.~rr.@Severity: SeverityResult
+	CxXMLResults.Query.~nn.Result.~rr.@AssignToUser: AssignToUser
+	CxXMLResults.Query.~nn.Result.~rr.@state: State
+	CxXMLResults.Query.~nn.Result.~rr.@Remark: Remark
+	CxXMLResults.Query.~nn.Result.~rr.@SeverityIndex: Severity_Index_Node
+	CxXMLResults.Query.~nn.Result.~rr.Path.@ResultId: ResultId
+	CxXMLResults.Query.~nn.Result.~rr.Path.@PathId: PathId
+	CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: SimilarityId
+CxPathNode:
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.FileName: PathNode_FileName
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Line: PathNode_Line
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Column: PathNode_Column
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.NodeId: PathNode_NodeId
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Name: PathNode_Name
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Type: PathNode_Type
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Length: PathNode_Length
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Snippet.Line.Number: PathNode_SnippetLine
+	CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Snippet.Line.Code: PathNode_Snippet_Code
