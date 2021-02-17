@@ -221,14 +221,14 @@ namespace CxAPI_Store
         {
             return CxPresets[key].name;
         }
-        public void writeDictionary(resultClass token, Dictionary<string,object> dict)
+        public void writeDictionary(resultClass token, Dictionary<string,object> dict, string fileName="dump.txt")
         {
             string dictText = String.Empty;
             foreach(string key in dict.Keys)
             {
-                dictText += String.Format("{0} > {1}\n", key, dict[key].ToString());
+                dictText += String.Format("{0} > {1}\n", key, dict[key] != null ? dict[key].ToString() : String.Empty);
             }
-            File.WriteAllText(token.file_path + "\\" + "dump.txt", dictText);
+            File.WriteAllText(token.file_path + "\\" + fileName, dictText);
         }
 
         private bool fetchFromScanFiles(resultClass token)

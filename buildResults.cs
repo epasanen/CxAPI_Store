@@ -13,24 +13,23 @@ using System.Xml.Linq;
 
 namespace CxAPI_Store
 {
-    class buildDetailResults : IDisposable
+    class buildResults : IDisposable
     {
         public resultClass token;
         private int maxQueries = 1000;
         private int maxResults = 1000;
         private int maxPathNodes = 1; // just the top most path node for now
 
-        public buildDetailResults(resultClass token)
+        public buildResults(resultClass token)
         {
             this.token = token;
         }
 
 
-
-        public List<object> fetchYMLReader(resultClass token, Dictionary<string, object> dict, string fileName)
+        public List<object> fetchYMLDetails(resultClass token, Dictionary<string, object> dict)
         {
             List<object> objList = new List<object>();
-
+            string fileName = String.IsNullOrEmpty(token.template_file) ? "DetailedReport.yaml" : token.template_file;
 
             int queryCount = 0, resultCount = 0, pathNodeCount = 0;
             int queryScore = 0, resultScore = 0, pathNodeScore = 0, headerScore = 0;
@@ -81,11 +80,43 @@ namespace CxAPI_Store
                     }
                 }
             }
+            else
+            {
+                throw new FileNotFoundException("File or path missing or incorrect: " + yaml);
+            }
 
             return objList;
         }
 
 
+        public List<object> fetchYMLSummary(resultClass token, Dictionary<string, object> dict)
+        {
+            List<object> objList = new List<object>();
+            string fileName = String.IsNullOrEmpty(token.template_file) ? "SummaryReport.yaml" : token.template_file;
+            int headerScore = 0;
+            string _os = RuntimeInformation.OSDescription;
+            string _ospath = _os.Contains("Windows") ? "\\" : "/";
+            string set_path = String.IsNullOrEmpty(token.template_path) ? String.Format("{0}{1}templates", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), _ospath) : token.template_path;
+            string yaml = String.Format("{0}{1}{2}", set_path, _ospath, fileName);
+            if (token.debug) Console.WriteLine(@"Using configuration in path " + yaml);
+            if (File.Exists(yaml))
+            {
+                Dictionary<string, object> headers = new Dictionary<string, object>();
+                headerScore = getNodes(yaml, "CxHeader", dict, headers, 0, 0, 0);
+                if (headerScore > 0)
+                {
+                    Dictionary<string, object> keys = new Dictionary<string, object>();
+                    getNodes(yaml, "CxKeys", dict, keys, 0, 0, 0);
+                    objList.Add(Flatten.CreateFlattenObject(headers));
+                }
+            }
+            else
+            {
+                throw new FileNotFoundException("File or path missing or incorrect: " + yaml);
+            }
+
+            return objList;
+        }
         private int getNodes(string yaml, string desired, Dictionary<string, object> dict, Dictionary<string, object> results, int queryCount, int resultCount, int pathNodeCount)
         {
             int count = 0;
@@ -139,6 +170,8 @@ namespace CxAPI_Store
                 if (comment) { continue; }
 
                 string[] split = line.Split(":");
+                if (split.Length != 2) { continue; }
+
                 key = split[0].Trim();
                 value = split[1].Trim();
                 if (tags.Contains(key) && key.Contains(desired))

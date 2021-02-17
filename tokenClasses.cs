@@ -64,6 +64,7 @@ namespace CxAPI_Store
         public bool purge_projects { get; set; }
         public string backup_path { get; set; }
         public string template_path { get; set; }
+        public string template_file { get; set; }
 
         List<ProjectObject> projectClass { get; set; }
 
@@ -123,7 +124,9 @@ public class resultToken
         public string CxDataFilePath { get; set; }
         public string CxDataFileName { get; set; }
         public string CxArchivalFilePath { get; set; }
-        public string CxTemplatePath { get; set; }
+        public string CxTemplatesPath { get; set; }
+        public string CxTemplateSummary { get; set; }
+        public string CxTemplateDetail { get; set; }
         public string CxBackupFilePath { get; set; }
         public string grant_type { get; set; }
         public string scope { get; set; }

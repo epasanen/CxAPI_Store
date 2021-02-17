@@ -16,21 +16,6 @@ namespace CxAPI_Store
         public static IConfigurationRoot _configuration;
         public static string[] _keys;
 
-
-        public static IConfigurationRoot configuration(string[] args)
-        {
-            Console.WriteLine(@"Using default configuration in path {0}", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location));
-            IConfigurationBuilder builder = new ConfigurationBuilder()
-            .SetBasePath(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location))
-             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-             .AddCommandLine(args);
-            _keys = args;
-
-            _configuration = builder.Build();
-
-
-            return _configuration;
-        }
         public static IConfigurationRoot configuration(string[] args, string path)
         {
             string _os = RuntimeInformation.OSDescription;
@@ -195,6 +180,8 @@ namespace CxAPI_Store
                   v => token.start_time = DateTime.Parse(v)},
                 { "tp|template_path=", "Provide path to csv templates",
                   v => token.template_path = v },
+                { "tf|template_file=", "Provide name of csv template",
+                  v => token.template_path = v },
                 { "et|end_time=", "Last scan end time",
                   v => token.end_time = DateTime.Parse(v)},
                 //add proxy stuff
@@ -248,7 +235,9 @@ namespace CxAPI_Store
                 token.start_time = (token.start_time == null) ? DateTime.Today.AddMonths(-1) : token.start_time;
                 token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
                 token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
-                token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatePath : token.template_path;
+                token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
+                if (token.report_name.Contains("REST_REPORT_SUMMARY")) { token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateSummary : token.template_file; }
+                if (token.report_name.Contains("REST_REPORT_DETAIL")) { token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateDetail : token.template_file; }
 
                 if (token.debug && token.verbosity > 0)
                 {

@@ -24,6 +24,7 @@ namespace CxAPI_Store
         {
             fetchProjectFiles fetchProject = new fetchProjectFiles(token);
             fetchProject.fetchFilteredScans(token);
+            buildResults build = new buildResults(token);
 
             List<object> objList = new List<object>();
             foreach(ProjectObject project in fetchProject.CxProjects)
@@ -39,7 +40,8 @@ namespace CxAPI_Store
                     result = Flatten.DeserializeAndFlatten(projectSettings, result);
                     result = Flatten.DeserializeAndFlatten(scanValues[key], result);
                     result = Flatten.DeserializeAndFlatten(resultStatisticsValues[key],result);
-                    objList.Add(Flatten.CreateFlattenObject(result));
+                    //fetchProject.writeDictionary(token, result,"dump_summary.txt");
+                    objList.AddRange(build.fetchYMLSummary(token, result));
                 }
             }
             csvHelper csv = new csvHelper();

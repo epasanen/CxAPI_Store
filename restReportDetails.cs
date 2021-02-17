@@ -25,7 +25,7 @@ namespace CxAPI_Store
         {
             fetchProjectFiles fetchProject = new fetchProjectFiles(token);
             fetchProject.fetchFilteredScans(token);
-            buildDetailResults build = new buildDetailResults(token);
+            buildResults build = new buildResults(token);
             List<object> objList = new List<object>();
 
 
@@ -41,7 +41,7 @@ namespace CxAPI_Store
                     doc.LoadXml(resultValues[key]);
                     string json = JsonConvert.SerializeXmlNode(doc);
                     Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
-                    objList.AddRange(build.fetchYMLReader(token, xmlDict,"DetailedResults.yaml"));
+                    objList.AddRange(build.fetchYMLDetails(token, xmlDict));
                     //fetchProject.writeDictionary(token, ymlDict);
                  
                 }
