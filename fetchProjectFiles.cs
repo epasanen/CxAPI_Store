@@ -17,6 +17,7 @@ namespace CxAPI_Store
         public Dictionary<string, Teams> CxTeams;
         public Dictionary<long, Presets> CxPresets;
         public Dictionary<long, ScanSettings> CxSettings;
+        public Dictionary<long, ProjectDetail> CxProjectDetail;
         public Dictionary<long, Dictionary<long, ScanObject>> CxIdxScans;
         public Dictionary<long,Dictionary<long, ScanStatistics>> CxIdxResultStatistics;
         public Dictionary<long,Dictionary<long, string>> CxIdxResults;
@@ -30,6 +31,7 @@ namespace CxAPI_Store
                 _osPath = _os.Contains("Windows") ? "\\" : "/";
                 CxProjects = new List<ProjectObject>();
                 CxSettings = new Dictionary<long, ScanSettings>();
+                CxProjectDetail = new Dictionary<long, ProjectDetail>();
                 CxTeams = new Dictionary<string, Teams>();
                 CxPresets = new Dictionary<long, Presets>();
                 CxIdxScans = new Dictionary<long, Dictionary<long, ScanObject>>();
@@ -84,8 +86,10 @@ namespace CxAPI_Store
                 string fileName = fsplits[fsplits.Length - 1];
                 string projectJson = String.Format("{0}{1}{2}_Project.json", directory, _osPath, fileName);
                 string settingsJson = String.Format("{0}{1}{2}_ScanSettings.json", directory, _osPath, fileName);
+                string projectDetailJson = String.Format("{0}{1}{2}_ProjectDetail.json", directory, _osPath, fileName);
                 ProjectObject projectObject = JsonConvert.DeserializeObject<ProjectObject>(File.ReadAllText(projectJson));
                 ScanSettings scanSettings = JsonConvert.DeserializeObject<ScanSettings>(File.ReadAllText(settingsJson));
+                ProjectDetail projectDetail = JsonConvert.DeserializeObject<ProjectDetail>(File.ReadAllText(settingsJson));
                 if (filterProjectSettings(token, projectObject, scanSettings))
                 {
                     CxProjects.Add(projectObject);

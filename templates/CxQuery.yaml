@@ -1,0 +1,12 @@
+﻿CxXMLResults.Query.~nn.@id: Query_Id
+CxXMLResults.Query.~nn.@categories: Query_Categories
+CxXMLResults.Query.~nn.@cweId: Query_CWE_ID
+CxXMLResults.Query.~nn.@name: Query_Name
+CxXMLResults.Query.~nn.@group: Query_Group
+CxXMLResults.Query.~nn.@Severity: Query_Severity
+CxXMLResults.Query.~nn.@Language: Query_Language
+CxXMLResults.Query.~nn.@LanguageHash: Query_Language_Hash
+CxXMLResults.Query.~nn.@LanguageChangeDate: Query_Language_Change_Date
+CxXMLResults.Query.~nn.@SeverityIndex: Query_Severity_Index
+CxXMLResults.Query.~nn.@QueryPath: Query_Path
+CxXMLResults.Query.~nn.@QueryVersionCode: Query_Version_Code

@@ -19,10 +19,12 @@ namespace CxAPI_Store
         private int maxQueries = 1000;
         private int maxResults = 1000;
         private int maxPathNodes = 1; // just the top most path node for now
+        private Dictionary<long, SortedDictionary<string, object>> sorted;
 
         public buildResults(resultClass token)
         {
             this.token = token;
+            sorted = new Dictionary<long, SortedDictionary<string, object>>();
         }
 
 
@@ -35,14 +37,14 @@ namespace CxAPI_Store
             int queryScore = 0, resultScore = 0, pathNodeScore = 0, headerScore = 0;
             string _os = RuntimeInformation.OSDescription;
             string _ospath = _os.Contains("Windows") ? "\\" : "/";
-            string set_path = String.IsNullOrEmpty(token.template_path) ? String.Format("{0}{1}templates", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), _ospath) : token.template_path;
+            string set_path = token.template_path;
             string yaml = String.Format("{0}{1}{2}", set_path, _ospath, fileName);
             if (token.debug) Console.WriteLine(@"Using configuration in path " + yaml);
             if (File.Exists(yaml))
             {
 
                 Dictionary<string, object> headers = new Dictionary<string, object>();
-                headerScore = getNodes(yaml, "CxHeader", dict, headers, 0, 0, 0);
+                headerScore = getNodes(yaml, "CxScan", dict, headers, 0, 0, 0);
                 if (headerScore > 0)
                 {
                     for (queryCount = 0; queryCount < maxQueries; queryCount++)
@@ -72,6 +74,8 @@ namespace CxAPI_Store
                                 final = final.Concat(queries.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                                 final = final.Concat(results.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                                 final = final.Concat(pathNode.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                                var scanValues = new SortedDictionary<string,object>(final);
+                                sorted.Add((long)scanValues["_KeyProjectId"], scanValues);
 
                                 objList.Add(Flatten.CreateFlattenObject(final));
 
@@ -149,7 +153,7 @@ namespace CxAPI_Store
         }
         private List<KeyValuePair<string, string>> findFilterTag(string yaml, string desired)
         {
-            List<string> tags = new List<string>() { "CxHeader", "CxQuery", "CxResult", "CxPathNode", "CxKeys" };
+            List<string> tags = new List<string>() { "CxScan", "CxQuery", "CxResult", "CxPathNode", "CxKeys" };
             List<KeyValuePair<string, string>> lkv = new List<KeyValuePair<string, string>>();
             string key = String.Empty;
             string value = String.Empty;

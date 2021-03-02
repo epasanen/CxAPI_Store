@@ -1,0 +1,14 @@
+﻿CxXMLResults.Query.~nn.Result.~rr.@NodeId: Result_NodeId
+CxXMLResults.Query.~nn.Result.~rr.@FileName: Result_FileName
+CxXMLResults.Query.~nn.Result.~rr.@Status: Result_Status
+CxXMLResults.Query.~nn.Result.~rr.@Line: Result_Line
+CxXMLResults.Query.~nn.Result.~rr.@Column: Result_Column
+CxXMLResults.Query.~nn.Result.~rr.@FalsePositive: Result_False_Positive
+CxXMLResults.Query.~nn.Result.~rr.@Severity: Result_Severity
+CxXMLResults.Query.~nn.Result.~rr.@AssignToUser: Result_AssignToUser
+CxXMLResults.Query.~nn.Result.~rr.@state: Result_State
+CxXMLResults.Query.~nn.Result.~rr.@Remark: Result_Remark
+CxXMLResults.Query.~nn.Result.~rr.@SeverityIndex: Result_Severity_Index
+CxXMLResults.Query.~nn.Result.~rr.Path.@ResultId: Result_Id
+CxXMLResults.Query.~nn.Result.~rr.Path.@PathId: Result_PathId
+CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: Result_SimilarityId

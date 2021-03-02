@@ -6,6 +6,7 @@
         getToken,
         scanResults,
         archivalResults,
+        archiveAndScan,
         getProjects,
         help
     }

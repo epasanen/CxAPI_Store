@@ -1,0 +1,5 @@
+﻿id: Project.Id
+teamId: Project.TeamId
+name: Project.Name
+TeamName: Project.TeamName
+PresetName: Project.PresetName

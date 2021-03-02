@@ -9,14 +9,14 @@ namespace CxAPI_Store
 {
     class get
     {
-        public bool get_Http(resultClass token, string path, int timeout = 10)
+        public bool get_Http(resultClass token, string path, int timeout = 10, string version = "v=1.0")
         {
             token.status = -1;
             try
             {
                 HttpClient client = Configuration._HttpClient(token);
                 client.DefaultRequestHeaders.Accept.Clear();
-                client.DefaultRequestHeaders.Add("Accept", "application/json;v=1.0");
+                client.DefaultRequestHeaders.Add("Accept", String.Format("application/json;{0}",version));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.bearer_token);
                 var response = client.GetAsync(path).Result;
                 if (response != null)

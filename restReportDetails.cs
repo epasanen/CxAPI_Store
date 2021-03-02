@@ -31,14 +31,12 @@ namespace CxAPI_Store
 
             foreach (ProjectObject project in fetchProject.CxProjects)
             {
-                var scanValues = fetchProject.CxIdxScans[Convert.ToInt64(project.id)];
-                var resultStatisticsValues = fetchProject.CxIdxResultStatistics[Convert.ToInt64(project.id)];
-                var projectSettings = fetchProject.CxSettings[Convert.ToInt64(project.id)];
+                var scanValues = new SortedDictionary<long,ScanObject>(fetchProject.CxIdxScans[Convert.ToInt64(project.id)]);
                 var resultValues = fetchProject.CxIdxResults[Convert.ToInt64(project.id)];
-                foreach (long key in scanValues.Keys)
+                foreach (var item in scanValues.OrderBy(i=>i.Key))
                 {
                     XmlDocument doc = new XmlDocument();
-                    doc.LoadXml(resultValues[key]);
+                    doc.LoadXml(resultValues[item.Key]);
                     string json = JsonConvert.SerializeXmlNode(doc);
                     Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
                     objList.AddRange(build.fetchYMLDetails(token, xmlDict));

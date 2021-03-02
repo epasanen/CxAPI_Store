@@ -1,4 +1,7 @@
-﻿namespace CxAPI_Store.dto
+﻿
+using System.Collections.Generic;
+
+namespace CxAPI_Store.dto
 {
 
 
@@ -46,5 +49,23 @@
         public SourceSettingsLink sourceSettingsLink { get; set; }
         public Link link { get; set; }
     }
+
+
+    public class ProjectDetail
+    {
+        public class Link
+        {
+            public string rel { get; set; }
+            public string uri { get; set; }
+            public string type { get; set; }
+        }
+        public int id { get; set; }
+        public int teamId { get; set; }
+        public string name { get; set; }
+        public bool isPublic { get; set; }
+        public List<object> customFields { get; set; }
+        public List<Link> links { get; set; }
+    }
+
 }
 

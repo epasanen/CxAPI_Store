@@ -1,0 +1,16 @@
+﻿sourceSettingsLink.type: Settings.SourceType
+sourceSettingsLink.rel: Settings.SourceRel
+sourceSettingsLink.uri: Settings.SourceUri
+link.Rel: Settings.LinkRel
+link.Uri: Settings.LinkUri
+isPublic: Settings.IsPublic
+engineConfiguration.id: Settings.EngineConfigId
+engineConfiguration.Link: Settings.EngineConfigLink
+engineConfiguration.Link.uri: Settings.EngineConfigUri
+postScanAction: Settings.PostScanAction 
+preset.id: Settings.PresetId
+preset.link.rel: Settings.PresetRel
+preset.link.uri: Settings.PresetUri
+project.id: Settings.ProjectId
+project.link.rel: Settings.ProjectRel
+project.link.uri: Settings.ProjectUri

@@ -2,7 +2,7 @@
   "profiles": {
     "CxAPI_Store": {
       "commandName": "Project",
-      "commandLineArgs": "--scan_results --debug --appsettings=c:\\scripts\\appsettings-store.json --report_name=REST_REPORT_DETAILS --start_time=01/01/2018 --end_time=01/01/2022  --verbose=1 --file_name=report_details.csv --max_scans=5"
+      "commandLineArgs": "--archive_and_scan --debug --appsettings=c:\\scripts\\appsettings-store.json --report_name=REST_REPORT_DETAILS --start_time=01/01/2018 --end_time=01/01/2022  --verbose=1 --file_name=report_details.csv --max_scans=5"
     }
   }
 }

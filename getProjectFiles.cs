@@ -17,6 +17,7 @@ namespace CxAPI_Store
         public Dictionary<string, Teams> CxTeams;
         public Dictionary<long, Presets> CxPresets;
         public Dictionary<long, ScanSettings> CxSettings;
+        public Dictionary<long, ProjectDetail> CxProjectDetail;
         public Dictionary<long, ScanStatistics> CxResultStatistics;
         public List<ReportTrace> trace;
         public string _osPath;
@@ -29,6 +30,7 @@ namespace CxAPI_Store
                 _osPath = _os.Contains("Windows") ? "\\" : "/";
                 CxResultStatistics = new Dictionary<long, ScanStatistics>();
                 CxSettings = new Dictionary<long, ScanSettings>();
+                CxProjectDetail = new Dictionary<long, ProjectDetail>();
                 trace = new List<ReportTrace>();
 
                 // See if the archival directory is available
@@ -106,6 +108,22 @@ namespace CxAPI_Store
             if (token.status == 0)
             {
                 pclass = JsonConvert.DeserializeObject<List<ProjectObject>>(token.op_result);
+            }
+
+            return pclass;
+        }
+        public ProjectDetail get_project_detail(resultClass token, long projectId)
+        {
+            get httpGet = new get();
+            ProjectDetail pclass = new ProjectDetail();
+            secure token_secure = new secure(token);
+            token_secure.findToken(token);
+            string path = token_secure.get_rest_Uri(String.Format(CxConstant.CxProject, projectId));
+            if (token.debug && token.verbosity > 1) { Console.WriteLine("API: {0}", path); }
+            httpGet.get_Http(token, path,10,"v=2.0");
+            if (token.status == 0)
+            {
+                pclass = JsonConvert.DeserializeObject<ProjectDetail>(token.op_result);
             }
 
             return pclass;
@@ -278,6 +296,10 @@ namespace CxAPI_Store
                             ScanSettings scanSettings = scans.getScanSettings(token, project.id);
                             CxSettings.Add(Convert.ToInt64(project.id), scanSettings);
                             File.WriteAllText(String.Format("{0}{1}{2:D10}_ScanSettings.json", projectPath, _osPath, Convert.ToInt64(project.id)), JsonConvert.SerializeObject(scanSettings));
+
+                            ProjectDetail projectDetail = get_project_detail(token, Convert.ToInt64(project.id));
+                            CxProjectDetail.Add(Convert.ToInt64(project.id), projectDetail);
+                            File.WriteAllText(String.Format("{0}{1}{2:D10}_ProjectDetail.json", projectPath, _osPath, Convert.ToInt64(project.id)), JsonConvert.SerializeObject(projectDetail));
                         }
                     }
                     if (token.scan_settings)
@@ -285,6 +307,10 @@ namespace CxAPI_Store
                         ScanSettings refreshSettings = scans.getScanSettings(token, project.id);
                         CxSettings.Add(Convert.ToInt64(project.id), refreshSettings);
                         File.WriteAllText(String.Format("{0}{1}{2:D10}_ScanSettings.json", projectPath, _osPath, Convert.ToInt64(project.id)), JsonConvert.SerializeObject(refreshSettings));
+
+                        ProjectDetail projectDetail = get_project_detail(token, Convert.ToInt64(project.id));
+                        CxProjectDetail.Add(Convert.ToInt64(project.id), projectDetail);
+                        File.WriteAllText(String.Format("{0}{1}{2:D10}_ProjectDetail.json", projectPath, _osPath, Convert.ToInt64(project.id)), JsonConvert.SerializeObject(projectDetail));
                     }
                 }
             }

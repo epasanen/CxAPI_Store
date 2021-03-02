@@ -65,6 +65,7 @@ namespace CxAPI_Store
         public string backup_path { get; set; }
         public string template_path { get; set; }
         public string template_file { get; set; }
+        public string master_path { get; set; }
 
         List<ProjectObject> projectClass { get; set; }
 
@@ -125,8 +126,7 @@ public class resultToken
         public string CxDataFileName { get; set; }
         public string CxArchivalFilePath { get; set; }
         public string CxTemplatesPath { get; set; }
-        public string CxTemplateSummary { get; set; }
-        public string CxTemplateDetail { get; set; }
+        public string CxTemplateFile { get; set; }
         public string CxBackupFilePath { get; set; }
         public string grant_type { get; set; }
         public string scope { get; set; }

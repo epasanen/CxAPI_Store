@@ -16,13 +16,16 @@ namespace CxAPI_Store
         public static IConfigurationRoot _configuration;
         public static string[] _keys;
 
-        public static IConfigurationRoot configuration(string[] args, string path)
+        public static string ospath()
         {
             string _os = RuntimeInformation.OSDescription;
-            string _ospath = _os.Contains("Windows") ? "\\" : "/";
+            return  _os.Contains("Windows") ? "\\" : "/";
+        }
+        public static IConfigurationRoot configuration(string[] args, string path)
+        {
             string set_path = String.IsNullOrEmpty(path) ? System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) : System.IO.Path.GetDirectoryName(path);
             string set_file = String.IsNullOrEmpty(path) ? "appsettings.json" : System.IO.Path.GetFileName(path);
-            Console.WriteLine(@"Using configuration in path {0}{1}{2}", set_path, _ospath, set_file);
+            Console.WriteLine(@"Using configuration in path {0}{1}{2}", set_path, ospath(), set_file);
             IConfigurationBuilder builder = new ConfigurationBuilder()
             .SetBasePath(set_path)
             .AddJsonFile(set_file, optional: true, reloadOnChange: true)
@@ -152,6 +155,8 @@ namespace CxAPI_Store
                   v => token.api_action = api_action.scanResults },
                 { "ar|archival_results", "Store scan results, filtered by time and project",
                   v => token.api_action = api_action.archivalResults },
+                { "ars|archive_and_scan", "Store scan results, filtered by time and project",
+                  v => token.api_action = api_action.archiveAndScan },
                 { "rn|report_name=", "Select desired report",
                   v => token.report_name = v },
                 { "pn|project_name=", "Filter with project name, Will return project if any portion of the project name is a match",
@@ -178,9 +183,9 @@ namespace CxAPI_Store
                   v => token.credential = v },
                 { "st|start_time=", "Last scan start time",
                   v => token.start_time = DateTime.Parse(v)},
-                { "tp|template_path=", "Provide path to csv templates",
+                { "tp|template_path=", "Provide path to templates",
                   v => token.template_path = v },
-                { "tf|template_file=", "Provide name of csv template",
+                { "tf|template_file=", "Provide name of template",
                   v => token.template_path = v },
                 { "et|end_time=", "Last scan end time",
                   v => token.end_time = DateTime.Parse(v)},
@@ -221,6 +226,7 @@ namespace CxAPI_Store
                 Configuration.configuration(args, token.appsettings);
                 token._setresultClass();
                 settingClass _settings = get_settings();
+                misc_setup(token,_settings);
                 if (_settings.use_proxy || token.use_proxy)
                 {
                     token.use_proxy = true;
@@ -229,15 +235,7 @@ namespace CxAPI_Store
                     Console.WriteLine("Using proxy {0}", token.proxy_url);
                 }
 
-                token.file_name = String.IsNullOrEmpty(token.file_name) ? _settings.CxDefaultFileName : token.file_name;
-                token.file_path = String.IsNullOrEmpty(token.file_path) ? _settings.CxDefaultFilePath : token.file_path;
-                token.end_time = (token.end_time == null) ? DateTime.Today : token.end_time;
-                token.start_time = (token.start_time == null) ? DateTime.Today.AddMonths(-1) : token.start_time;
-                token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
-                token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
-                token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
-                if (token.report_name.Contains("REST_REPORT_SUMMARY")) { token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateSummary : token.template_file; }
-                if (token.report_name.Contains("REST_REPORT_DETAIL")) { token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateDetail : token.template_file; }
+
 
                 if (token.debug && token.verbosity > 0)
                 {
@@ -261,6 +259,19 @@ namespace CxAPI_Store
             return token;
         }
 
+        private static void misc_setup(resultClass token, settingClass _settings)
+        {
+
+            token.master_path = String.IsNullOrEmpty(token.template_path) ? String.Format("{0}{1}templates", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), ospath()) : token.template_path;
+            token.file_name = String.IsNullOrEmpty(token.file_name) ? _settings.CxDefaultFileName : token.file_name;
+            token.file_path = String.IsNullOrEmpty(token.file_path) ? _settings.CxDefaultFilePath : token.file_path;
+            token.end_time = (token.end_time == null) ? DateTime.Today : token.end_time;
+            token.start_time = (token.start_time == null) ? DateTime.Today.AddMonths(-1) : token.start_time;
+            token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
+            token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
+            token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
+            token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file; 
+        }
 
         private static void ShowHelp(OptionSet p)
         {
