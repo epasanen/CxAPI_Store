@@ -38,6 +38,10 @@ namespace CxAPI_Store
             resultRows = new List<libraryClass>();
             projectRows = new Dictionary<long, SortedDictionary<long, List<libraryClass>>>();
             scanRows = new SortedDictionary<long, List<libraryClass>>();
+            // set defaults
+            fileName = token.file_name;
+            filePath = token.file_path;
+            outputType = "CSV";
         }
 
         public void storeScanResults(libraryClass results, Dictionary<string,object> keys)
@@ -79,7 +83,8 @@ namespace CxAPI_Store
                 }
             }
             csvHelper csv = new csvHelper();
-            csv.writeCVSFile(objList,_token);
+            string fileName = this.filePath + this._token.os_path + this.fileName;
+            csv.writeCVSFile(objList, fileName);
 
         }
     }

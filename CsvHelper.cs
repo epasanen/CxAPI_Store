@@ -25,6 +25,23 @@ namespace CxAPI_Store
             }
             return 0;
         }
+        public int writeCVSFile(List<object> objList, string fileName)
+        {
+            try
+            {
+                using (var writer = new StreamWriter(fileName))
+                using (var csv = new CsvWriter(writer))
+                {
+                    csv.WriteRecords(objList);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.ToString());
+                return -1;
+            }
+            return 0;
+        }
 
     }
 }

@@ -25,7 +25,7 @@ namespace CxAPI_Store
         public bool fetchReport()
         {
 
-            string set_path = token.template_path; 
+            string set_path = token.template_path;
             fetchProjectFiles fetchProject = new fetchProjectFiles(token);
             fetchProject.fetchFilteredScans(token);
 
@@ -34,17 +34,18 @@ namespace CxAPI_Store
             List<string> customFiles = new List<string>(Directory.GetFiles(set_path, fileName, SearchOption.AllDirectories));
             foreach (string customFile in customFiles)
             {
-                libraryClasses results = fetchResults(fetchProject, customFile);
+                libraryClasses store = new libraryClasses(token);
+                fetchReportOptions(customFile, store, token);
+                libraryClasses results = fetchResults(fetchProject, customFile, store);
                 results.generateCsv();
-
             }
             return true;
         }
 
 
-        public libraryClasses fetchResults(fetchProjectFiles fetchProject, string customFile)
+        public libraryClasses fetchResults(fetchProjectFiles fetchProject, string customFile, libraryClasses store)
         {
-            libraryClasses store = new libraryClasses(token);
+
             buildResults build = new buildResults(token);
             Dictionary<string, object> result = new Dictionary<string, object>();
 
@@ -85,11 +86,60 @@ namespace CxAPI_Store
 
             return result;
         }
-        public void Dispose()
-        {
 
+        private bool fetchReportOptions(string customFile, libraryClasses store, resultClass token)
+        {
+            bool comment = false;
+
+
+            foreach (string line in File.ReadLines(customFile))
+            {
+                if (line.StartsWith("//")) continue;
+                if (line.StartsWith("/*"))
+                {
+                    comment = true;
+                    continue;
+                }
+                if (line.StartsWith("*/"))
+                {
+                    comment = false;
+                    continue;
+                }
+                if (comment) { continue; }
+
+
+                string[] split = line.Split(":");
+                if (split.Length != 2) { return false; };
+                if (String.IsNullOrEmpty(split[1].Trim())) { continue; };
+
+                if (split[0].Contains("CxReport."))
+                {
+                    switch (split[0])
+                    {
+                        case "CxReport.File.Name":
+                            store.fileName = split[1];
+                            break;
+                        case "CxReport.File.Path":
+                            store.filePath = split[1];
+                            break;
+                        case "CxReport.File.Type":
+                            store.outputType = split[1];
+                            break;
+
+                        default: break;
+                    }
+                }
+
+            }
+
+            return true;
         }
 
+    public void Dispose()
+    {
+
     }
+
+}
 }
 

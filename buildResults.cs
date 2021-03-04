@@ -32,7 +32,7 @@ namespace CxAPI_Store
         public libraryClasses fetchDetails(resultClass token, Dictionary<string, object> dict, string customFile, libraryClasses store)
         {
             List<object> objList = new List<object>();
-   
+
 
             int queryCount = 0, resultCount = 0, pathNodeCount = 0;
             int queryScore = 0, resultScore = 0, pathNodeScore = 0, headerScore = 0;
@@ -47,42 +47,40 @@ namespace CxAPI_Store
             }
             Dictionary<string, object> scans = new Dictionary<string, object>();
             headerScore = getNodes(customFile, "CxScan", dict, scans, 0, 0, 0);
-            if (headerScore > 0)
+
+            Dictionary<string, object> queries = new Dictionary<string, object>();
+            for (queryCount = 0; queryCount < maxQueries; queryCount++)
             {
-                Dictionary<string, object> queries = new Dictionary<string, object>();
-                for (queryCount = 0; queryCount < maxQueries; queryCount++)
+                queryScore = getNodes(customFile, "CxQuery", dict, queries, queryCount, 0, 0);
+                if (queryScore == 0) break;
+
+                for (resultCount = 0; resultCount < maxResults; resultCount++)
                 {
-                    queryScore = getNodes(customFile, "CxQuery", dict, queries, queryCount, 0, 0);
-                    if (queryScore == 0) break;
+                    Dictionary<string, object> results = new Dictionary<string, object>();
+                    resultScore = getNodes(customFile, "CxResult", dict, results, queryCount, resultCount, 0);
+                    if (resultScore == 0) break;
 
-                    for (resultCount = 0; resultCount < maxResults; resultCount++)
+                    for (pathNodeCount = 0; pathNodeCount < maxPathNodes; pathNodeCount++)
                     {
-                        Dictionary<string, object> results = new Dictionary<string, object>();
-                        resultScore = getNodes(customFile, "CxResult", dict, results, queryCount, resultCount, 0);
-                        if (resultScore == 0) break;
+                        Dictionary<string, object> pathNode = new Dictionary<string, object>();
+                        pathNodeScore = getNodes(customFile, "CxPathNode.0", dict, pathNode, queryCount, resultCount, pathNodeCount);
+//                        if (pathNodeScore == 0) break;
 
-                        for (pathNodeCount = 0; pathNodeCount < maxPathNodes; pathNodeCount++)
-                        {
-                            Dictionary<string, object> pathNode = new Dictionary<string, object>();
-                            pathNodeScore = getNodes(customFile, "CxPathNode.0", dict, pathNode, queryCount, resultCount, pathNodeCount);
-                            if (pathNodeScore == 0) break;
+                        pathNodeScore = getLastNode(customFile, "CxPathNode.n", dict, pathNode, queryCount, resultCount);
 
-                            pathNodeScore = getLastNode(customFile, "CxPathNode.n", dict, pathNode, queryCount, resultCount);
+                        Dictionary<string, object> keys = new Dictionary<string, object>();
+                        getKeys("CxKeys", dict, keys);
 
-                            Dictionary<string, object> keys = new Dictionary<string, object>();
-                            getKeys("CxKeys", dict, keys);
+                        libraryClass storeClass = new libraryClass();
 
-                            libraryClass storeClass = new libraryClass();
+                        storeClass.header = header;
+                        storeClass.scan = scans;
+                        storeClass.queries = queries;
+                        storeClass.results = results;
+                        storeClass.pathNodes = pathNode;
 
-                            storeClass.header = header;
-                            storeClass.scan = scans;
-                            storeClass.queries = queries;
-                            storeClass.results = results;
-                            storeClass.pathNodes = pathNode;
+                        store.storeScanResults(storeClass, keys);
 
-                            store.storeScanResults(storeClass, keys);
-
-                        }
                     }
                 }
             }
@@ -208,8 +206,16 @@ namespace CxAPI_Store
                 if (!results.ContainsKey(raw.Key))
                 {
                     results.Add(raw.Key, dict[key]);
+                    return true;
                 }
-                return true;
+            }
+            else
+            {
+                if (!results.ContainsKey(raw.Key))
+                {
+                    results.Add(raw.Key, " ");
+                    return false;
+                }
             }
             return false;
         }
@@ -245,7 +251,7 @@ namespace CxAPI_Store
             List<KeyValuePair<string, string>> results = new List<KeyValuePair<string, string>>();
             foreach (string key in referenceKeys.Keys)
             {
-                 results.Add(new KeyValuePair<string, string>(key, referenceKeys[key]));
+                results.Add(new KeyValuePair<string, string>(key, referenceKeys[key]));
             }
             return results;
         }
@@ -310,6 +316,7 @@ namespace CxAPI_Store
             string[] split = inString.Split(":");
             if (split.Length != 2) { return false; };
             if (String.IsNullOrEmpty(split[1].Trim())) { return false; };
+            if (split[0].Contains("CxReport.")) { return false; }
 
             return true;
         }
