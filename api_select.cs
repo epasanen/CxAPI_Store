@@ -8,6 +8,7 @@
         archivalResults,
         archiveAndScan,
         getProjects,
+        buildTemplates,
         help
     }
 

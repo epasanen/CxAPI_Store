@@ -22,7 +22,7 @@ namespace CxAPI_Store
         public DateTime timestamp { get; set; }
 
     }
- 
+
     public class resultClass : tokenClass
     {
         public int status { get; set; }
@@ -100,9 +100,8 @@ namespace CxAPI_Store
         }
 
     }
- 
 
-public class resultToken
+    public class resultToken
     {
         public string access_token { get; set; }
         public string expires_in { get; set; }
@@ -139,55 +138,13 @@ public class resultToken
         public bool proxy_use_default { get; set; }
         public string proxy_url { get; set; }
         public string debug { get; set; }
-
     }
     public class settingToken
     {
         public string CxUrl { get; set; }
         public string action { get; set; }
     }
-    public class csvScanOutput_1
-    {
-        public string Project_Name { get; set; }
-        public string Owner { get; set; }
-        public string Team { get; set; }
-        public string Preset { get; set; }
-        public int Total_Vulerabilities { get; set; }
-        public DateTime Last_Scan { get; set; }
-        public int High { get; set; }
-        public int Medium { get; set; }
-        public int Low { get; set; }
-        public int Info { get; set; }
 
-    }
-    public class csvScanOutput_2
-    {
-        public string Team { get; set; }
-        public string Project_Name { get; set; }
-        public string Owner { get; set; }
-        public string Onboarded { get; set; }
-        public DateTime Onboarding_Date { get; set; }
-        public int Total_Vulerabilities { get; set; }
-        public DateTime Last_Scan { get; set; }
-        public int High { get; set; }
-        public int Medium { get; set; }
-
-    }
-
-    public class CxUsers
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string email { get; set; }
-        public bool isAudit { get; set; }
-        public DateTime createDate { get; set; }
-        public DateTime lastLogin { get; set; }
-        public string exparation { get; set; }
-        public string company { get; set; }
-        public bool isActive { get; set; }
-        public string jobTitle { get; set; }
-        public string teams { get; set; }
-    }
 }
 
 

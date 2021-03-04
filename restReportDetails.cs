@@ -21,33 +21,69 @@ namespace CxAPI_Store
         {
             this.token = token;
         }
+
         public bool fetchReport()
         {
+
+            string set_path = token.template_path; 
             fetchProjectFiles fetchProject = new fetchProjectFiles(token);
             fetchProject.fetchFilteredScans(token);
-            buildResults build = new buildResults(token);
-            List<object> objList = new List<object>();
 
+            string fileName = token.template_file;
+            if (token.debug) Console.WriteLine(@"Using configuration in path " + set_path);
+            List<string> customFiles = new List<string>(Directory.GetFiles(set_path, fileName, SearchOption.AllDirectories));
+            foreach (string customFile in customFiles)
+            {
+                libraryClasses results = fetchResults(fetchProject, customFile);
+                results.generateCsv();
+
+            }
+            return true;
+        }
+
+
+        public libraryClasses fetchResults(fetchProjectFiles fetchProject, string customFile)
+        {
+            libraryClasses store = new libraryClasses(token);
+            buildResults build = new buildResults(token);
+            Dictionary<string, object> result = new Dictionary<string, object>();
 
             foreach (ProjectObject project in fetchProject.CxProjects)
             {
-                var scanValues = new SortedDictionary<long,ScanObject>(fetchProject.CxIdxScans[Convert.ToInt64(project.id)]);
+                var resultStatisticsValues = fetchProject.CxIdxResultStatistics[Convert.ToInt64(project.id)];
+                var scanValues = new SortedDictionary<long, ScanObject>(fetchProject.CxIdxScans[Convert.ToInt64(project.id)]);
                 var resultValues = fetchProject.CxIdxResults[Convert.ToInt64(project.id)];
-                foreach (var item in scanValues.OrderBy(i=>i.Key))
+                result = fetchHeaders(fetchProject, project);
+                foreach (var item in scanValues.OrderBy(i => i.Key))
                 {
+                    result = Flatten.DeserializeAndFlatten(scanValues[item.Key], result);
+                    result = Flatten.DeserializeAndFlatten(resultStatisticsValues[item.Key], result);
                     XmlDocument doc = new XmlDocument();
                     doc.LoadXml(resultValues[item.Key]);
                     string json = JsonConvert.SerializeXmlNode(doc);
                     Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
-                    objList.AddRange(build.fetchYMLDetails(token, xmlDict));
+                    result = Flatten.DeserializeAndFlatten(xmlDict, result);
                     //fetchProject.writeDictionary(token, ymlDict);
-                 
+                    store = build.fetchDetails(token, result, customFile, store);
                 }
             }
-            csvHelper csv = new csvHelper();
-            csv.writeCVSFile(objList, token);
+            return store;
+        }
+        public Dictionary<string, object> fetchHeaders(fetchProjectFiles fetchProject, ProjectObject project)
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
 
-            return true;
+            var scanValues = fetchProject.CxIdxScans[Convert.ToInt64(project.id)];
+
+            var projectSettings = fetchProject.CxSettings[Convert.ToInt64(project.id)];
+            var projectDetails = fetchProject.CxProjectDetail[Convert.ToInt64(project.id)];
+            result = Flatten.DeserializeAndFlatten(project);
+            var teamAndPreset = fetchProject.getTeamAndPresetNames(project.teamId, projectSettings.preset.id);
+            result = Flatten.DeserializeAndFlatten(teamAndPreset, result);
+            result = Flatten.DeserializeAndFlatten(projectSettings, result);
+            result = Flatten.DeserializeAndFlatten(projectDetails, result);
+
+            return result;
         }
         public void Dispose()
         {

@@ -59,12 +59,19 @@ namespace CxAPI_Store.dto
             public string uri { get; set; }
             public string type { get; set; }
         }
+        public class customField
+        {
+            public string id { get; set; }
+            public string value { get; set; }
+            public string name { get; set; }
+
+        }
         public int id { get; set; }
         public int teamId { get; set; }
         public string name { get; set; }
         public bool isPublic { get; set; }
-        public List<object> customFields { get; set; }
-        public List<Link> links { get; set; }
+        public customField[]  customFields { get; set; }
+        public Link[] links { get; set; }
     }
 
 }

@@ -157,6 +157,8 @@ namespace CxAPI_Store
                   v => token.api_action = api_action.archivalResults },
                 { "ars|archive_and_scan", "Store scan results, filtered by time and project",
                   v => token.api_action = api_action.archiveAndScan },
+                { "bt|build_templates", "Build template file that can then be edited.",
+                  v => token.api_action = api_action.buildTemplates},
                 { "rn|report_name=", "Select desired report",
                   v => token.report_name = v },
                 { "pn|project_name=", "Filter with project name, Will return project if any portion of the project name is a match",
@@ -186,7 +188,7 @@ namespace CxAPI_Store
                 { "tp|template_path=", "Provide path to templates",
                   v => token.template_path = v },
                 { "tf|template_file=", "Provide name of template",
-                  v => token.template_path = v },
+                  v => token.template_file = v },
                 { "et|end_time=", "Last scan end time",
                   v => token.end_time = DateTime.Parse(v)},
                 //add proxy stuff
@@ -257,7 +259,7 @@ namespace CxAPI_Store
                 ShowHelp(p);
             }
             return token;
-        }
+       }
 
         private static void misc_setup(resultClass token, settingClass _settings)
         {

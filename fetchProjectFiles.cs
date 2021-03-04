@@ -18,7 +18,7 @@ namespace CxAPI_Store
         public Dictionary<long, Presets> CxPresets;
         public Dictionary<long, ScanSettings> CxSettings;
         public Dictionary<long, ProjectDetail> CxProjectDetail;
-        public Dictionary<long, Dictionary<long, ScanObject>> CxIdxScans;
+        public  Dictionary<long, SortedDictionary<long, ScanObject>> CxIdxScans;
         public Dictionary<long,Dictionary<long, ScanStatistics>> CxIdxResultStatistics;
         public Dictionary<long,Dictionary<long, string>> CxIdxResults;
         public string _osPath;
@@ -34,7 +34,7 @@ namespace CxAPI_Store
                 CxProjectDetail = new Dictionary<long, ProjectDetail>();
                 CxTeams = new Dictionary<string, Teams>();
                 CxPresets = new Dictionary<long, Presets>();
-                CxIdxScans = new Dictionary<long, Dictionary<long, ScanObject>>();
+                CxIdxScans = new Dictionary<long, SortedDictionary<long, ScanObject>>();
                 CxIdxResultStatistics = new Dictionary<long, Dictionary<long, ScanStatistics>>();
                 CxIdxResults = new Dictionary<long, Dictionary<long, string>>();
             }
@@ -89,11 +89,12 @@ namespace CxAPI_Store
                 string projectDetailJson = String.Format("{0}{1}{2}_ProjectDetail.json", directory, _osPath, fileName);
                 ProjectObject projectObject = JsonConvert.DeserializeObject<ProjectObject>(File.ReadAllText(projectJson));
                 ScanSettings scanSettings = JsonConvert.DeserializeObject<ScanSettings>(File.ReadAllText(settingsJson));
-                ProjectDetail projectDetail = JsonConvert.DeserializeObject<ProjectDetail>(File.ReadAllText(settingsJson));
-                if (filterProjectSettings(token, projectObject, scanSettings))
+                ProjectDetail projectDetail = JsonConvert.DeserializeObject<ProjectDetail>(File.ReadAllText(projectDetailJson));
+                if (filterProjectSettings(token, projectObject, scanSettings, projectDetail))
                 {
                     CxProjects.Add(projectObject);
                     CxSettings.Add(Convert.ToInt64(projectObject.id), scanSettings);
+                    CxProjectDetail.Add(Convert.ToInt64(projectObject.id), projectDetail);
                 }
             }
             return true;
@@ -101,7 +102,7 @@ namespace CxAPI_Store
 
         public bool fetchScanFiles(resultClass token, ProjectObject project)
         {
-            CxIdxScans.Add(Convert.ToInt64(project.id), new Dictionary<long, ScanObject>());
+            CxIdxScans.Add(Convert.ToInt64(project.id), new SortedDictionary<long, ScanObject>());
             CxIdxResultStatistics.Add(Convert.ToInt64(project.id), new Dictionary<long, ScanStatistics>());
             CxIdxResults.Add(Convert.ToInt64(project.id), new Dictionary<long, string>());
 
@@ -154,7 +155,7 @@ namespace CxAPI_Store
             return true;
         }
 
-        public bool filterProjectSettings(resultClass token, ProjectObject project, ScanSettings settings)
+        public bool filterProjectSettings(resultClass token, ProjectObject project, ScanSettings settings, ProjectDetail projectDetail)
         {
             return testProject(token, project) && testTeam(token, project) && testPreset(token, project, settings);
         }

@@ -20,7 +20,7 @@ namespace CxAPI_Store
         }
         private resultClass dispatchTree(resultClass token)
         {
-            secure secure = new secure(token);      
+            secure secure = new secure(token);
             fetchToken newtoken = new fetchToken();
             switch (token.api_action)
             {
@@ -41,23 +41,10 @@ namespace CxAPI_Store
                     }
                 case api_action.scanResults:
                     {
-                        token = newtoken.get_token(secure.decrypt_Credentials());
-                        if (token.report_name.Contains("REST_REPORT_SUMMARY"))
+                        using (restReportDetails restReportDetail = new restReportDetails(token))
                         {
-                            using (restReportSummary restReportSummary = new restReportSummary(token))
-                            {
-                                restReportSummary.fetchReport();
-                            }
+                            restReportDetail.fetchReport();
                         }
-
-                        if (token.report_name.Contains("REST_REPORT_DETAILS"))
-                        {
-                            using (restReportDetails restReportDetail = new restReportDetails(token))
-                            {
-                                restReportDetail.fetchReport();
-                            }
-                        }
-
                         break;
                     }
                 case api_action.archivalResults:
@@ -82,6 +69,14 @@ namespace CxAPI_Store
 
                         break;
                     }
+                case api_action.buildTemplates:
+                    {
+                        using (buildResults buildResults = new buildResults(token))
+                        {
+                            buildResults.buildTemplate(token);
+                        }
+                        break;
+                    }
 
                 default:
                     {
@@ -91,21 +86,21 @@ namespace CxAPI_Store
             }
             return token;
         }
-    public dispatcher()
-    {
-        stopWatch = new Stopwatch();
-        stopWatch.Start();
-        Console.WriteLine("Start Time: {0}", DateTime.UtcNow.ToString());
+        public dispatcher()
+        {
+            stopWatch = new Stopwatch();
+            stopWatch.Start();
+            Console.WriteLine("Start Time: {0}", DateTime.UtcNow.ToString());
+        }
+        public void Elapsed_Time()
+        {
+            stopWatch.Stop();
+            TimeSpan ts = stopWatch.Elapsed;
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                        ts.Hours, ts.Minutes, ts.Seconds,
+                        ts.Milliseconds / 10);
+            Console.WriteLine("Stop Time: {0}", DateTime.UtcNow.ToString());
+            Console.WriteLine("Total elapsed time: {0}", elapsedTime);
+        }
     }
-    public void Elapsed_Time()
-    {
-        stopWatch.Stop();
-        TimeSpan ts = stopWatch.Elapsed;
-        string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
-                    ts.Hours, ts.Minutes, ts.Seconds,
-                    ts.Milliseconds / 10);
-        Console.WriteLine("Stop Time: {0}", DateTime.UtcNow.ToString());
-        Console.WriteLine("Total elapsed time: {0}", elapsedTime);
-    }
-}
 }

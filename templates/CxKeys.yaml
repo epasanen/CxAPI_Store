@@ -1,9 +1,9 @@
-﻿CxXMLResults.@ProjectId: _Scan.KeyProjectId
-CxXMLResults.@ScanId: _Scan.KeyScanId
-CxXMLResults.@ScanStart: _Scan.KeyScanStart
-CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: _Scan.KeySimilarityId
-CxXMLResults.Query.~nn.Result.~rr.@FileName: _Scan.KeyFileName
-CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Name: _Scan.KeyNode
+﻿CxXMLResults.@ProjectId: _KeyProjectId
+CxXMLResults.@ScanId: _KeyScanId
+CxXMLResults.@ScanStart: _KeyScanStart
+CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: _KeySimilarityId
+CxXMLResults.Query.~nn.Result.~rr.@FileName: _KeyFileName
+CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Name: _KeyNode
 project.id: _KeyProjectId
 id: _KeyScanId
 DateAndTime.StartedOn: _KeyScanStart
