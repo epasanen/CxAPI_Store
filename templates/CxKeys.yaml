@@ -1,9 +1,10 @@
 ﻿CxXMLResults.@ProjectId: _KeyProjectId
 CxXMLResults.@ScanId: _KeyScanId
-CxXMLResults.@ScanStart: _KeyScanStart
+CxXMLResults.@ScanStart: _KeyStartDate
 CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: _KeySimilarityId
 CxXMLResults.Query.~nn.Result.~rr.@FileName: _KeyFileName
-CxXMLResults.Query.~nn.Result.~rr.Path.PathNode.~pp.Name: _KeyNode
+TeamName: _KeyTeamName
+PresetName: _KeyPresetName
 project.id: _KeyProjectId
 id: _KeyScanId
-DateAndTime.StartedOn: _KeyScanStart
+DateAndTime.StartedOn: _KeyStartDate

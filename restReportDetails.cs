@@ -37,7 +37,7 @@ namespace CxAPI_Store
                 libraryClasses store = new libraryClasses(token);
                 fetchReportOptions(customFile, store, token);
                 libraryClasses results = fetchResults(fetchProject, customFile, store);
-                results.generateCsv();
+                results.generateCsv(customFile);
             }
             return true;
         }
@@ -51,21 +51,24 @@ namespace CxAPI_Store
 
             foreach (ProjectObject project in fetchProject.CxProjects)
             {
+                
                 var resultStatisticsValues = fetchProject.CxIdxResultStatistics[Convert.ToInt64(project.id)];
                 var scanValues = new SortedDictionary<long, ScanObject>(fetchProject.CxIdxScans[Convert.ToInt64(project.id)]);
                 var resultValues = fetchProject.CxIdxResults[Convert.ToInt64(project.id)];
                 result = fetchHeaders(fetchProject, project);
+                var projects = build.fetchProject(token, result, customFile);
                 foreach (var item in scanValues.OrderBy(i => i.Key))
                 {
                     result = Flatten.DeserializeAndFlatten(scanValues[item.Key], result);
                     result = Flatten.DeserializeAndFlatten(resultStatisticsValues[item.Key], result);
                     XmlDocument doc = new XmlDocument();
                     doc.LoadXml(resultValues[item.Key]);
-                    string json = JsonConvert.SerializeXmlNode(doc);
+                    string json = JsonConvert.SerializeXmlNode(doc); 
                     Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
                     result = Flatten.DeserializeAndFlatten(xmlDict, result);
                     //fetchProject.writeDictionary(token, ymlDict);
-                    store = build.fetchDetails(token, result, customFile, store);
+                    var scans = build.fetchScan(token, result, customFile);
+                    store = build.fetchDetails(token, result, customFile,projects,scans,store);
                 }
             }
             return store;

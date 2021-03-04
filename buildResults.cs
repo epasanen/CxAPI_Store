@@ -28,25 +28,28 @@ namespace CxAPI_Store
 
         }
 
+        public Dictionary<string, object> fetchProject(resultClass token, Dictionary<string, object> dict, string customFile)
+        {
+            Dictionary<string, object> header = new Dictionary<string, object>();
+            getNodes(customFile, "CxProject", dict, header, 0, 0, 0);
+            getNodes(customFile, "CxSettings", dict, header, 0, 0, 0);
+            return header;
+        }
+        public Dictionary<string, object> fetchScan(resultClass token, Dictionary<string, object> dict, string customFile)
+        {
+            Dictionary<string, object> header = new Dictionary<string, object>();
+            getNodes(customFile, "CxScan", dict, header, 0, 0, 0);
+            getNodes(customFile, "CxSummary", dict, header, 0, 0, 0);
+            return header;
+        }
 
-        public libraryClasses fetchDetails(resultClass token, Dictionary<string, object> dict, string customFile, libraryClasses store)
+        public libraryClasses fetchDetails(resultClass token, Dictionary<string, object> dict, string customFile, Dictionary<string, object> projects, Dictionary<string, object> scans, libraryClasses store)
         {
             List<object> objList = new List<object>();
 
 
             int queryCount = 0, resultCount = 0, pathNodeCount = 0;
-            int queryScore = 0, resultScore = 0, pathNodeScore = 0, headerScore = 0;
-
-
-            Dictionary<string, object> header = new Dictionary<string, object>();
-            headerScore = getNodes(customFile, "CxProject", dict, header, 0, 0, 0);
-            if (headerScore > 0)
-            {
-                getNodes(customFile, "CxSettings", dict, header, 0, 0, 0);
-                getNodes(customFile, "CxSummary", dict, header, 0, 0, 0);
-            }
-            Dictionary<string, object> scans = new Dictionary<string, object>();
-            headerScore = getNodes(customFile, "CxScan", dict, scans, 0, 0, 0);
+            int queryScore = 0, resultScore = 0, pathNodeScore = 0;
 
             Dictionary<string, object> queries = new Dictionary<string, object>();
             for (queryCount = 0; queryCount < maxQueries; queryCount++)
@@ -64,7 +67,7 @@ namespace CxAPI_Store
                     {
                         Dictionary<string, object> pathNode = new Dictionary<string, object>();
                         pathNodeScore = getNodes(customFile, "CxPathNode.0", dict, pathNode, queryCount, resultCount, pathNodeCount);
-//                        if (pathNodeScore == 0) break;
+                        //                        if (pathNodeScore == 0) break;
 
                         pathNodeScore = getLastNode(customFile, "CxPathNode.n", dict, pathNode, queryCount, resultCount);
 
@@ -73,11 +76,12 @@ namespace CxAPI_Store
 
                         libraryClass storeClass = new libraryClass();
 
-                        storeClass.header = header;
+                        storeClass.project = projects;
                         storeClass.scan = scans;
                         storeClass.queries = queries;
                         storeClass.results = results;
                         storeClass.pathNodes = pathNode;
+                        storeClass.keys = keys;
 
                         store.storeScanResults(storeClass, keys);
 
@@ -264,10 +268,24 @@ namespace CxAPI_Store
             {
                 if (customKeys.ContainsKey(key))
                 {
-                    results.Add(new KeyValuePair<string, string>(key, referenceKeys[key]));
+                    results.Add(new KeyValuePair<string, string>(customKeys[key], referenceKeys[key]));
                 }
             }
             return results;
+        }
+        public Dictionary<string, object> sortTemplate(Dictionary<string,object> rawIn, string desired)
+        {
+            Dictionary<string, string> customKeys = loadDictionary(desired);
+            Dictionary<string, object> sorted = new Dictionary<string, object>();
+ 
+            foreach (string value in customKeys.Values)
+            {
+                if (rawIn.ContainsKey(value))
+                {
+                    sorted.Add(value, rawIn[value]);
+                }
+            }
+            return sorted;
         }
 
         private Dictionary<string, string> loadDictionary(string file, bool flip = false)
