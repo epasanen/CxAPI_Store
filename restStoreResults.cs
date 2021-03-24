@@ -58,37 +58,41 @@ namespace CxAPI_Store
 
         public bool waitForResult(resultClass token, List<ReportTrace> trace, getScanResults scanResults)
         {
+            int read_timeout = token.result_timeout * token.max_threads;
+            int wait_timeout = read_timeout * 2;
+
             bool waitFlag = false;
             DateTime wait_expired = DateTime.UtcNow;
             while (!waitFlag)
             {
-                if (wait_expired.AddMinutes(2) < DateTime.UtcNow)
+                if (wait_expired.AddSeconds(wait_timeout) < DateTime.UtcNow)
                 {
-                    Console.Error.WriteLine("waitForResult timeout! {0}", getTimeOutObjects(trace));
+                    Console.Error.WriteLine("waitForResult timeout! {0} seconds", wait_timeout);
+                    getTimeOutObjects(trace);
                     break;
                 }
                 if (token.debug && token.verbosity > 0) { Console.WriteLine("Sleeping 3 second(s)"); }
                 Thread.Sleep(3000);
-
+                bool noHold = true;
                 foreach (ReportTrace rt in trace)
                 {
                     if (!rt.isRead)
                     {
                         waitFlag = false;
-                        if (rt.TimeStamp.AddMinutes(2) < DateTime.UtcNow)
+                        if (rt.TimeStamp.AddMinutes(read_timeout) < DateTime.UtcNow)
                         {
-                            Console.Error.WriteLine("ReportId/ScanId {0}/{1} timeout!", rt.reportId, rt.scanId);
+                            Console.Error.WriteLine("Timeout! {0} seconds. ReportId/ScanId/ProjectID/ProjectName {1}/{2}/{3}/{4}", rt.reportId, rt.scanId, rt.projectId, rt.projectName);
                             rt.isRead = true;
                             continue;
                         }
-                        if (scanResults.GetResultStatus(rt.reportId, token))
+                        if (scanResults.GetResultStatus(rt.reportId, token) == 2)
                         {
-                            if (token.debug && token.verbosity > 0) { Console.WriteLine("Reaady status for reportId {0}", rt.reportId); }
-                            Thread.Sleep(2000);
-                            var result = scanResults.GetResult(rt.reportId, token);
+                            if (token.debug && token.verbosity > 0) { Console.WriteLine("Ready status for reportId {0}/{1}/{2}/{3}", rt.reportId, rt.scanId, rt.projectId, rt.projectName); }
+                            if (token.debug && token.verbosity > 0) { Console.WriteLine("Wait a max of {0} seconds",token.result_timeout); }
+                            var result = scanResults.GetResult(rt.reportId, token, token.result_timeout);
                             if (result != null)
                             {
-                                if (token.debug && token.verbosity > 0) { Console.WriteLine("Fetch data for reportId {0}", rt.reportId); }
+                                if (token.debug && token.verbosity > 0) { Console.WriteLine("Fetch data successful for reportId {0}/{1}/{2}/{3}", rt.reportId, rt.scanId, rt.projectId, rt.projectName); }
                                 string scanName = String.Format("Results_{0:D10}_{1:yyyy-MM-ddTHH-mm-ssZ}.xml", rt.scanId, rt.scanTime);
                                 string scanDir = String.Format("{0}{1}{2:D10}{3}{4:D10}", token.archival_path, _osPath, Convert.ToInt64(rt.projectId), _osPath, rt.scanId);
                                 string scanPath = String.Format("{0}{1}{2}", scanDir, _osPath, scanName);
@@ -98,7 +102,12 @@ namespace CxAPI_Store
                             else
                             {
                                 rt.isRead = true;
-                                Console.Error.WriteLine("Failed processing reportId {0}", rt.reportId);
+                                Console.Error.WriteLine("Failed fetch of report {0}/{1}/{2}/{3}", rt.reportId,rt.scanId,rt.projectId,rt.projectName);
+                                string scanName = String.Format("Results_{0:D10}_{1:yyyy-MM-ddTHH-mm-ssZ}.hold", rt.scanId, rt.scanTime);
+                                string scanDir = String.Format("{0}{1}{2:D10}{3}{4:D10}", token.archival_path, _osPath, Convert.ToInt64(rt.projectId), _osPath, rt.scanId);
+                                string scanPath = String.Format("{0}{1}{2}", scanDir, _osPath, scanName);
+                                File.WriteAllText(scanPath, String.Format("~~Error fetch of report {0}/{1}/{2}/{3}", rt.reportId,rt.scanId,rt.projectId,rt.projectName, System.Text.Encoding.UTF8));
+                                if (token.debug && token.verbosity > 0) { Console.WriteLine("Write placeholder for reportId {0}/{1}/{2}/{3}", rt.reportId, rt.scanId, rt.projectId, rt.projectName); }
                                 if (token.debug && token.verbosity > 1)
                                 {
                                     Console.Error.WriteLine("Dumping XML:");
@@ -108,8 +117,15 @@ namespace CxAPI_Store
                         }
                         else
                         {
-                            Console.Error.WriteLine("Failed retrieving reportId {0}", rt.reportId);
-                            rt.isRead = true;
+                            Console.Error.WriteLine("Report status {0}/{1}/{2}/{3}/{4}", rt.reportId, rt.scanId, rt.projectId, rt.projectName, token.op_result);
+                            if (token.status == 3) //Failure
+                            {
+                                rt.isRead = true;
+                            }
+                            else
+                            {
+                                noHold = false;
+                            }
                         }
                     }
                     else
@@ -118,19 +134,19 @@ namespace CxAPI_Store
                     }
 
                 }
-                waitFlag = true;
+                waitFlag = noHold;
             }
 
             return true;
         }
-        private string getTimeOutObjects(List<ReportTrace> trace)
+        private void getTimeOutObjects(List<ReportTrace> trace)
         {
             string result = string.Empty;
             foreach (ReportTrace rt in trace)
             {
-                result += string.Format("ProjectName {0}, ScanId {1}, TimeStamp {2}, isRead {3}", rt.projectName, rt.scanId, rt.TimeStamp, rt.isRead) + Environment.NewLine;
+                Console.Error.WriteLine("ProjectName {0}, ProjectId {1},  ScanId {2}, TimeStamp {3}, isRead {3}", rt.projectName, rt.projectId, rt.scanId, rt.TimeStamp, rt.isRead);
             }
-            return result;
+
         }
         public void Dispose()
         {

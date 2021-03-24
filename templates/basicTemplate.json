@@ -1,0 +1,28 @@
+{
+  "cultureName": "en-US",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Title"
+    },
+    {
+      "type": "Table",
+      "dataSourceId": "datasource",
+      "columns": [
+      ]
+    }
+  ],
+  "writersSettings": {
+    "delimitedTextReportWriter": {
+      "delimiter": ","
+    },
+    "xlsxReportWriter": {
+      "formatTranslators": [
+        {
+          "from": "C",
+          "to": "$###,###,##0.00"
+        }
+      ]
+    }
+  }
+}

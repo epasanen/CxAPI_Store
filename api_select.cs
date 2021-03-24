@@ -4,10 +4,11 @@
     {
         storeCredentials,
         getToken,
-        scanResults,
-        archivalResults,
-        archiveAndScan,
-        getProjects,
+        archiveFilesandDataSet,
+        archivetoDataSet,
+        archivetoFiles,
+        generateReports,
+        buildDataSet,
         buildTemplates,
         help
     }

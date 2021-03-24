@@ -66,6 +66,9 @@ namespace CxAPI_Store
         public string template_path { get; set; }
         public string template_file { get; set; }
         public string master_path { get; set; }
+        public string query_filter { get; set; }
+        public int result_timeout { get; set; }
+
 
         List<ProjectObject> projectClass { get; set; }
 
@@ -75,6 +78,7 @@ namespace CxAPI_Store
             api_action = api_action.help;
             max_threads = 5;
             max_scans = 0;
+            result_timeout = 30;
             test = false;
             scan_settings = false;
             purge_projects = false;
@@ -143,6 +147,22 @@ namespace CxAPI_Store
     {
         public string CxUrl { get; set; }
         public string action { get; set; }
+    }
+    public class config
+    {
+        public string templateFile { get; set; }
+        public string templatePath { get; set; }
+        public string outputFile { get; set; }
+        public string outputPath { get; set; }
+        public string outputType { get; set; }
+
+    }
+    public class configYAML
+    {
+        public List<config> CxConfig { get; set; }
+        public string defaultTemplatePath { get; set; }
+        public string defaultOutputPath { get; set; }
+
     }
 
 }

@@ -152,5 +152,10 @@ namespace CxAPI_Store.dto
     {
         public int count { get; set; }
     }
+    public class JSONcolumns
+    {
+        public string field { get; set; }
+        public string title { get; set; }
+    }
 
 }

@@ -1,10 +1,20 @@
-﻿CxXMLResults.@ProjectId: _KeyProjectId
-CxXMLResults.@ScanId: _KeyScanId
-CxXMLResults.@ScanStart: _KeyStartDate
-CxXMLResults.Query.~nn.Result.~rr.Path.@SimilarityId: _KeySimilarityId
-CxXMLResults.Query.~nn.Result.~rr.@FileName: _KeyFileName
-TeamName: _KeyTeamName
-PresetName: _KeyPresetName
-project.id: _KeyProjectId
-id: _KeyScanId
-DateAndTime.StartedOn: _KeyStartDate
+﻿Key_Project_Id : Project_Id
+Key_Project_Id : Scan_ProjectId
+Key_Scan_Id : Scan_ScanId
+Key_Scan_Id : Summary_Id
+Key_Project_Name : Project_Name
+Key_Project_Name : Scan_ProjectName
+Key_Start_Date : Summary_DateAndTime_StartedOn
+Key_Result_FileName : Result_FileName
+Key_Result_FileName: PathNode_First_FileName
+Key_Result_SimilarityId: Result_SimilarityId
+Key_Result_ResultId: Result_ResultId
+Key_Result_PathId: Result_PathId
+Key_Project_Team_Name : Project_Team_Name
+Key_Project_Preset_Name : Project_Preset_Name
+Key_Query_Id : Query_id
+Key_Query_CWE : Query_cweId
+Key_Query_Name : Query_name
+Key_Query_Language : Query_Language
+Key_Result_FalsePositive: Result_FalsePositive
+Key_Result_DetectionDate: Result_DetectionDate

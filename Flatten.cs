@@ -1,8 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using CxAPI_Store.dto;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -47,7 +50,7 @@ namespace CxAPI_Store
             return result;
         }
 
-        public static object CreateFlattenObject(Dictionary<string,object> dict)
+        public static object CreateFlattenObject(Dictionary<string, object> dict)
         {
             dynamic dynObject = new ExpandoObject();
             foreach (string key in dict.Keys)
@@ -56,7 +59,29 @@ namespace CxAPI_Store
             }
             return dynObject;
         }
- 
+        public static MasterDTO CreateFlattenObject(Dictionary<string, object> dict, Dictionary<string,string> masterKey)
+        {
+            MasterDTO master = new MasterDTO();
+            string normalizeName(string name) => name.ToLowerInvariant();
+            var type = master.GetType();
+
+            var setters = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanWrite && p.GetSetMethod() != null)
+                .ToDictionary(p => normalizeName(p.Name));
+
+            foreach (var item in dict)
+            {
+                if (masterKey.ContainsValue(item.Key))
+                if (setters.TryGetValue(normalizeName(item.Key), out var setter))
+                {
+                    //var value = setter.PropertyType.ChangeType(item.Value);
+                    setter.SetValue(master, item.Value);
+                }
+            }
+
+            return master;
+        }
+
         private static void FillDictionaryFromJToken(Dictionary<string, object> dict, JToken token, string prefix)
         {
             switch (token.Type)

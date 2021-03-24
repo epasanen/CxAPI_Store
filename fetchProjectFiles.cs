@@ -8,6 +8,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
+using static CxAPI_Store.dto.ProjectDetail;
 
 namespace CxAPI_Store
 {
@@ -157,7 +158,18 @@ namespace CxAPI_Store
 
         public bool filterProjectSettings(resultClass token, ProjectObject project, ScanSettings settings, ProjectDetail projectDetail)
         {
-            return testProject(token, project) && testTeam(token, project) && testPreset(token, project, settings);
+            return testProject(token, project) && testTeam(token, project) && testPreset(token, project, settings) && testQuery(token,projectDetail);
+        }
+        public bool testQuery(resultClass token, ProjectDetail projectDetail)
+        {
+            foreach(customField cf in projectDetail.customFields)
+            {
+                if (String.IsNullOrEmpty(token.query_filter) || cf.value.Contains(token.query_filter))
+                { 
+                    return true;
+                }
+            }
+            return false;     
         }
         public bool testProject(resultClass token, ProjectObject project)
         {
@@ -214,8 +226,8 @@ namespace CxAPI_Store
         public object getTeamAndPresetNames(string teamKey, long presetKey)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-            result.Add("TeamName", getTeamName(teamKey));
-            result.Add("PresetName", getPresetName(presetKey));
+            result.Add("Team_Name", getTeamName(teamKey));
+            result.Add("Preset_Name", getPresetName(presetKey));
             return Flatten.CreateFlattenObject(result);
         }
         private object getTeamName(string key)
@@ -225,15 +237,6 @@ namespace CxAPI_Store
         private object getPresetName(long key)
         {
             return CxPresets[key].name;
-        }
-        public void writeDictionary(resultClass token, Dictionary<string,object> dict, string fileName="dump.txt")
-        {
-            string dictText = String.Empty;
-            foreach(string key in dict.Keys)
-            {
-                dictText += String.Format("{0} > {1}\n", key, dict[key] != null ? dict[key].ToString() : String.Empty);
-            }
-            File.WriteAllText(token.file_path + "\\" + fileName, dictText);
         }
 
         private bool fetchFromScanFiles(resultClass token)

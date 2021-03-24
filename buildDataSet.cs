@@ -17,7 +17,7 @@ using System.Xml.Linq;
 
 namespace CxAPI_Store
 {
-    class buildResults : IDisposable
+    class buildDataSet : IDisposable
     {
         public resultClass token;
         private int maxQueries = 1000;
@@ -26,53 +26,64 @@ namespace CxAPI_Store
         private int maxNodes = 1000;
         private string lastCustomFile = String.Empty;
 
+        public DataStore dataStore;
         public Dictionary<string, string> masterTemplate;
-        public Dictionary<string, object> projects;
         public Dictionary<string, string> customKeys;
-        public buildResults(resultClass token)
+
+
+
+        public buildDataSet(resultClass token, DataStore dataStore)
         {
             this.token = token;
             string FileName = String.Format("{0}{1}{2}.yaml", token.master_path, token.os_path, "MasterMap");
             masterTemplate = loadDictionary(FileName);
-            customKeys = new Dictionary<string, string>();
+            this.dataStore = dataStore;
         }
 
         public Dictionary<string, object> fetchProject(resultClass token, Dictionary<string, object> dict, string customFile)
         {
             int projectScore = 0;
-            projects = new Dictionary<string, object>();
-
+            Dictionary<string, object> projects = new Dictionary<string, object>();
             if (!lastCustomFile.Contains(customFile))
             {
                 customKeys = loadDictionary(customFile, false);
             }
             projectScore = getNodes("Project_", dict, projects, 0, 0, 0);
+            dataStore.copyAndPurge("projects",projects);
          
             return projects;
         }
-        public libraryClasses fetchDetails(resultClass token, Dictionary<string, object> dict, string customFile, libraryClasses store)
+        public void fetchDetails(resultClass token, Dictionary<string, object> dict, string customFile)
         {
             List<object> objList = new List<object>();
 
-            Dictionary<string, object> summary = new Dictionary<string, object>();
 
             int queryCount = 0, resultCount = 0, pathNodeCount = 0;
             int scanScore = 0, summaryScore = 0, queryScore = 0, resultScore = 0, pathNodeFirstScore = 0, pathNodeLastScore = 0;
 
-            scanScore = getNodes("Scan_", dict, summary, queryCount, 0, 0);
+            Dictionary<string, object> scan = new Dictionary<string, object>();
+            Dictionary<string, object> summary = new Dictionary<string, object>();
+
+            scanScore = getNodes("Scan_", dict, scan, queryCount, 0, 0);
             summaryScore = getNodes("Summary_", dict, summary, queryCount, 0, 0);
+
+            dataStore.copyAndPurge("scans", scan);
+            dataStore.copyAndPurge("summaries", summary);
+
 
             for (queryCount = 0; queryCount < maxQueries; queryCount++)
             {
-                Dictionary<string, object> queries = new Dictionary<string, object>();
-                queryScore = getNodes("Query_", dict, queries, queryCount, 0, 0);
+                Dictionary<string, object> query = new Dictionary<string, object>();
+                queryScore = getNodes("Query_", dict, query, queryCount, 0, 0);
+                dataStore.copyAndPurge("queries", query);
                 if (queryScore == 0) break;
 
                 for (resultCount = 0; resultCount < maxResults; resultCount++)
                 {
                     Dictionary<string, object> results = new Dictionary<string, object>();
-
                     resultScore = getNodes("Result_", dict, results, queryCount, resultCount, 0);
+                    dataStore.copyAndPurge("results", results);
+
                     if (resultScore == 0) break;
 
                     for (pathNodeCount = 0; pathNodeCount < maxPathNodes; pathNodeCount++)
@@ -81,26 +92,12 @@ namespace CxAPI_Store
 
                         pathNodeFirstScore = getNodes("PathNode_First_", dict, nodes, queryCount, resultCount, pathNodeCount);
                         pathNodeLastScore = getandMapLastNode("PathNode_Last_", dict, nodes, queryCount, resultCount);
-
-                        Dictionary<string, object> keys = new Dictionary<string, object>();
-                        getKeys("CxKeys", dict, keys, queryCount, resultCount);
-                        libraryClass storeClass = new libraryClass();
-                        storeClass.project = projects;
-                        storeClass.scan = summary;
-
-                        Dictionary<string, object> final = new Dictionary<string, object>();
-                        final = final.Concat(summary.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                        final = final.Concat(queries.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                        final = final.Concat(results.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                        storeClass.result= final.Concat(nodes.Where(kvp => !final.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-                        store.storeScanResults(storeClass, keys);
-
+                        dataStore.copyAndPurge("nodes", nodes);
                     }
                 }
             }
 
-            return store;
+            return;
         }
         public void writeDictionary(resultClass token, Dictionary<string, object> dict, string fileName = "MasterMap.yaml")
         {
@@ -196,26 +193,35 @@ namespace CxAPI_Store
                 }
 
             }
+            getKeys("CxKeys", dict, results, queryCount, resultCount);
             return count;
         }
         private int getKeys(string partial, Dictionary<string, object> dict, Dictionary<string, object> results, int queryCount, int resultCount)
         {
             int count = 0;
-            Dictionary<string, string> keyFiles = loadDictionary(String.Format("{0}{1}{2}.yaml", token.master_path, token.os_path, partial));
+            List<KeyValuePair<string,string>> keyFiles = loadKeyValues(String.Format("{0}{1}{2}.yaml", token.master_path, token.os_path, partial));
             // get the real key from the mastermap file
-            foreach (string key in keyFiles.Keys)
+            foreach (KeyValuePair<string,string> kvp in keyFiles)
             {
-                if (masterTemplate.ContainsKey(keyFiles[key]))
+                if (masterTemplate.ContainsKey(kvp.Value))
                 {
-                    string realKey = masterTemplate[keyFiles[key]];
+                    string realKey = masterTemplate[kvp.Value];
                     realKey = realKey.Replace("~qq", queryCount.ToString());
                     realKey = realKey.Replace("~rr", resultCount.ToString());
                     if (dict.ContainsKey(realKey.Trim()))
                     {
-                        if (!results.ContainsKey(key))
+                        if (!results.ContainsKey(kvp.Key))
                         {
-                            results.Add(key, dict[realKey.Trim()]);
+                            results.Add(kvp.Key, dict[realKey.Trim()]);
                             count++;
+                        }
+                        else
+                        {
+                            var val = dict[realKey.Trim()].ToString();
+                            if (!String.IsNullOrEmpty(val))             
+                            {
+                                results[kvp.Key] =  dict[realKey.Trim()];
+                            }
                         }
                     }
                 }
@@ -388,6 +394,20 @@ namespace CxAPI_Store
                 }
             }
             return dict;
+        }
+        public List<KeyValuePair<string,string>> loadKeyValues(string file)
+        {
+            List<KeyValuePair<string, string>> kv = new List<KeyValuePair<string, string>>();
+            bool comment = false;
+            foreach (string line in File.ReadLines(file))
+            {
+                if (testForComments(line, comment))
+                {
+                    string[] keyValue = line.Split(":");
+                    kv.Add(new KeyValuePair<string,string>(keyValue[0].Trim(), keyValue[1].Trim()));  
+                }
+            }
+            return kv;
         }
         private bool testForComments(string inString, bool comment)
         {

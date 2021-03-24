@@ -7,7 +7,7 @@ namespace CxAPI_Store
 {
     class getScanResults
     {
-        public XElement GetResult(long report_id, resultClass token)
+        public XElement GetResult(long report_id, resultClass token, int timeout = 30)
         {
             string path = String.Empty;
             try
@@ -18,7 +18,7 @@ namespace CxAPI_Store
                 token_secure.findToken(token);
                 path = token_secure.get_rest_Uri(String.Format(CxConstant.CxReportFetch, report_id));
                 if (token.debug && token.verbosity > 1) { Console.WriteLine("API: {0}", path); }
-                httpGet.get_Http(token, path);
+                httpGet.get_Http(token, path, timeout);
                 if (token.status == 0)
                 {
                     string result = token.op_result;
@@ -67,8 +67,9 @@ namespace CxAPI_Store
             return null;
         }
 
-        public bool GetResultStatus(long report_id, resultClass token)
+        public long GetResultStatus(long report_id, resultClass token)
         {
+            int failure = 3;
             string path = String.Empty;
             try
             {
@@ -81,9 +82,20 @@ namespace CxAPI_Store
                 if (token.status == 0)
                 {
                     ReportReady ready = JsonConvert.DeserializeObject<ReportReady>(token.op_result);
-                    if (ready.Status.Id == 2)
+                    if (token.debug && token.verbosity > 0)
                     {
-                        return true;
+                        Console.WriteLine("GetResultStatus: Ready: {0}/{1}", ready.Status.Id, ready.Status.Value);
+                    }
+                    token.status = (int)ready.Status.Id;
+                    token.op_result = ready.Status.Value;
+                    return ready.Status.Id;
+
+                }
+                else
+                {
+                    if (token.debug && token.verbosity > 0)
+                    {
+                        Console.Error.WriteLine("GetResultStatus: bad status returned (0)", token.op_result);
                     }
                 }
             }
@@ -96,7 +108,9 @@ namespace CxAPI_Store
                     Console.Error.WriteLine("GetResultStatus: {0}, Message: {1} Trace: {2}", path, ex.Message, ex.StackTrace);
                 }
             }
-            return false;
+            token.status = failure;
+            token.op_result = "Failed";
+            return failure;
         }
 
         public ReportResult SetResultRequest(long scan_id, string report_type, resultClass token)

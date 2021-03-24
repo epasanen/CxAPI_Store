@@ -151,16 +151,16 @@ namespace CxAPI_Store
                   v => token.api_action = api_action.getToken },
                 { "c|store_credentials", "Store username and credential in an encrypted file",
                   v => token.api_action = api_action.storeCredentials },
-                { "s|scan_results", "Get scan results, filtered by time and project",
-                  v => token.api_action = api_action.scanResults },
-                { "ar|archival_results", "Store scan results, filtered by time and project",
-                  v => token.api_action = api_action.archivalResults },
-                { "ars|archive_and_scan", "Store scan results, filtered by time and project",
-                  v => token.api_action = api_action.archiveAndScan },
+                { "sr|scan_results", "Get scan results, filtered by time and project",
+                  v => token.api_action = api_action.generateReports },
+                { "as|archive_save", "Store scan results in files and DB, filtered by time and project",
+                  v => token.api_action = api_action.archiveFilesandDataSet },
+                { "afs|archive_files", "Store scan results, filtered by time and project",
+                  v => token.api_action = api_action.archivetoFiles },
+                { "adb|save_db", "Store into DB, filtered by time and project",
+                  v => token.api_action = api_action.buildDataSet },
                 { "bt|build_templates", "Build template file that can then be edited.",
                   v => token.api_action = api_action.buildTemplates},
-                { "rn|report_name=", "Select desired report",
-                  v => token.report_name = v },
                 { "pn|project_name=", "Filter with project name, Will return project if any portion of the project name is a match",
                   v => token.project_name = v },
                 { "tn|team_name=", "Filter with team name, Will return a team if any portion of the team name is a match",
@@ -215,6 +215,10 @@ namespace CxAPI_Store
                   v => token.scan_settings = true},
                 { "ps|purge_projects", "If set, remove projects no longer in CxSAST",
                   v => token.purge_projects = true},
+                { "qu|query_filter=", "Set to add filter to project extraction",
+                  v => token.query_filter = v},
+                { "to|result_timeout=", "Set the maximum time to wait for a result to upload.",
+                  v => token.result_timeout = Convert.ToInt32(v)},
                 { "d|debug", "Output debugging info ",
                   v => token.debug = true },
                 { "T|test", "Wait at end of program ",
@@ -236,8 +240,6 @@ namespace CxAPI_Store
                     token.proxy_url = String.IsNullOrEmpty(token.proxy_url) ? _settings.proxy_url : token.proxy_url;
                     Console.WriteLine("Using proxy {0}", token.proxy_url);
                 }
-
-
 
                 if (token.debug && token.verbosity > 0)
                 {
@@ -272,7 +274,8 @@ namespace CxAPI_Store
             token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
             token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
             token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
-            token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file; 
+            token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file;
+          
         }
 
         private static void ShowHelp(OptionSet p)

@@ -39,7 +39,7 @@ namespace CxAPI_Store
                         }
                         break;
                     }
-                case api_action.scanResults:
+                case api_action.generateReports:
                     {
                         using (restReportDetails restReportDetail = new restReportDetails(token))
                         {
@@ -47,7 +47,7 @@ namespace CxAPI_Store
                         }
                         break;
                     }
-                case api_action.archivalResults:
+                case api_action.archivetoFiles:
                     {
                         token = newtoken.get_token(secure.decrypt_Credentials());
                         using (restStoreResults restStoreResult = new restStoreResults(token))
@@ -57,16 +57,26 @@ namespace CxAPI_Store
 
                         break;
                     }
-                case api_action.archiveAndScan:
+                case api_action.archiveFilesandDataSet:
                     {
                         token = newtoken.get_token(secure.decrypt_Credentials());
                         using (restStoreResults restStoreResult = new restStoreResults(token))
                         {
                             restStoreResult.fetchResultsAndStore();
                         }
-                        token.api_action = api_action.scanResults;
-                        token = dispatchTree(token);
+                        using (restReportDetails restReportDetail = new restReportDetails(token))
+                        {
+                            restReportDetail.buildDataSet();
+                        }
 
+                        break;
+                    }
+                case api_action.buildDataSet:
+                    {
+                        using (restReportDetails restReportDetail = new restReportDetails(token))
+                        {
+                            restReportDetail.buildDataSet();
+                        }
                         break;
                     }
                 case api_action.buildTemplates:

@@ -13,7 +13,7 @@ namespace CxAPI_Store
             try
             {
                 using (var writer = new StreamWriter(token.file_path + token.os_path + token.file_name))
-                using (var csv = new CsvWriter(writer))
+                using (var csv = new CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture, false))
                 {
                     csv.WriteRecords(objList);
                 }
@@ -28,9 +28,10 @@ namespace CxAPI_Store
         public int writeCVSFile(List<object> objList, string fileName)
         {
             try
+
             {
                 using (var writer = new StreamWriter(fileName))
-                using (var csv = new CsvWriter(writer))
+                using (var csv = new CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture, false))
                 {
                     csv.WriteRecords(objList);
                 }
