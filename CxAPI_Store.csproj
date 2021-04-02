@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,6 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="buildResults.cs" />
+    <Compile Remove="libraryClass.cs" />
+    <Compile Remove="Queryable.cs" />
+    <Compile Remove="SimpleExporter.cs" />
+    <Compile Remove="testPdfReport.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CS-Script.Core" Version="2.0.0" />
     <PackageReference Include="CsvHelper" Version="26.0.1" />
     <PackageReference Include="itext7.pdfhtml" Version="3.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="5.0.3" />
@@ -36,8 +45,15 @@
     <None Update="templates\MasterMap.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="templates\AnalytixTemplate.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="templates\MasterTemplate.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="templates\Transform.json">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>Transform.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
@@ -51,6 +67,14 @@
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="templates\Transform.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Transform.json</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

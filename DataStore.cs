@@ -68,6 +68,7 @@ namespace CxAPI_Store
             table.Columns.Add("Key_Scan_Id", typeof(Int64));
             table.Columns.Add("Key_Project_Name", typeof(String));
             table.Columns.Add("Key_Start_Date", typeof(DateTime));
+            table.Columns.Add("Key_End_Date", typeof(DateTime));
             table.Columns.Add("Key_Result_FileName", typeof(String));
             table.Columns.Add("Key_Result_SimilarityId", typeof(Int64));
             table.Columns.Add("Key_Result_ResultId", typeof(Int64));
@@ -109,39 +110,7 @@ namespace CxAPI_Store
 
             return new Dictionary<string, object>();
         }
-        public void selectOption(string customFile)
-        {
-            Queryable queryable = new Queryable(_token);
-            queryable.getByCustomFields(dataSet);
-            getTemplate("any", queryable);
-
-        }
-        public async void getTemplate(string templateName, object model)
-        {
-            try
-            {
-                var engine = new RazorLightEngineBuilder().UseFileSystemProject(_token.template_path).UseMemoryCachingProvider().Build();
-             
-
-                string result = await engine.CompileRenderAsync("test.cshtml", model);
-                File.WriteAllText(_token.template_path + _token.os_path + "test.html", result);
-                createPdf(result, _token.template_path + _token.os_path + "test.pdf");
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public void createPdf(string src, string dest)
-        {
-            ConverterProperties cp = new ConverterProperties();
-       
-            var writer = new PdfWriter(new FileInfo(dest));
-            HtmlConverter.ConvertToPdf(src, writer);
-        }
-
-
+ 
     }
 
 }

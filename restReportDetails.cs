@@ -17,35 +17,87 @@ namespace CxAPI_Store
     class restReportDetails : IDisposable
     {
         public resultClass token;
+        public string opLog;
 
         public restReportDetails(resultClass token)
         {
             this.token = token;
+            opLog = token.dump_operation;
+        }
+        public bool opLogger(ProjectObject project, long scan)
+        {
+            bool a = false;
+            bool b = false;
+            bool c = false;
+
+            foreach (string s in opLog.Split(':'))
+            {
+                if (s.Contains("projectid"))
+                {
+                    a = true;
+                    continue;
+                }
+                if (s.Contains("projectname"))
+                {
+                    b = true;
+                    continue;
+                }
+                if (s.Contains("scanid"))
+                {
+                    c = true;
+                    continue;
+                }
+                if (a)
+                {
+                    if (project.id.Contains(s))
+                        return true;
+                    a = false;
+                }
+                if (b)
+                {
+                    if (project.name.Contains(s))
+                        return true;
+                    b = false;
+                }
+                if (c)
+                {
+                    if (scan == Convert.ToInt64(s))
+                        return true;
+                    c = false;
+                }
+
+            }
+            return false;
+        }
+        public bool opLogger()
+        {
+            if (opLog.Contains(":break"))
+                return true;
+            return false;
         }
 
         public bool fetchReport()
         {
-            //testPdfReport pdf = new testPdfReport(token);
-            //pdf.testPDF();
-            //return true;
+            fetchAnalytix fx = new fetchAnalytix(token);
+            fx.loadRawFiles();
+            return true;
             DataStore store = new DataStore(token);
             string set_path = token.template_path;
             string fileName = token.template_file;
             if (token.debug) Console.WriteLine(@"Using configuration in path " + set_path);
             List<string> customFiles = new List<string>(Directory.GetFiles(set_path, fileName, SearchOption.AllDirectories));
             store.restoreDataSet();
-            foreach (string customFile in customFiles)
-            {
-                fetchReportOptions(customFile, store, token);
-               store.selectOption(customFile);
-            }
+            dynamic obj = outputGenerator.buildObject(token, store.dataSet);
+            outputGenerator.useCsHtmlTemplate(token, "test.cshtml", obj, false, true);
+            //foreach (string customFile in customFiles)
+            //{
+            //    fetchReportOptions(customFile, store, token);
+            //   store.selectOption(customFile);
+            //}
             return true;
         }
-        public bool buildDataSet()
+        public DataStore buildDataSet(bool noSave = false)
         {
-            //testPdfReport pdf = new testPdfReport(token);
-            //pdf.testPDF();
-            //return true;
             DataStore store = new DataStore(token);
             buildDataSet buildData = new buildDataSet(token, store);
             string set_path = token.template_path;
@@ -56,10 +108,12 @@ namespace CxAPI_Store
             List<string> customFiles = new List<string>(Directory.GetFiles(set_path, fileName, SearchOption.AllDirectories));
             string masterFile = token.master_path + token.os_path + "MasterTemplate.yaml";
             fetchResults(fetchProject, masterFile, buildData);
-            store.saveDataSet();
-            return true;
+            if (!noSave) { store.saveDataSet(); }
+            return store;
         }
-        public void fetchResults(fetchProjectFiles fetchProject,  string masterFile, buildDataSet build)
+
+
+        public void fetchResults(fetchProjectFiles fetchProject, string masterFile, buildDataSet build)
         {
 
             Dictionary<string, object> header = new Dictionary<string, object>();
@@ -67,7 +121,7 @@ namespace CxAPI_Store
 
             foreach (ProjectObject project in fetchProject.CxProjects)
             {
-                
+
                 var resultStatisticsValues = fetchProject.CxIdxResultStatistics[Convert.ToInt64(project.id)];
                 var scanValues = new SortedDictionary<long, ScanObject>(fetchProject.CxIdxScans[Convert.ToInt64(project.id)]);
                 var resultValues = fetchProject.CxIdxResults[Convert.ToInt64(project.id)];
@@ -77,25 +131,30 @@ namespace CxAPI_Store
                 {
                     try
                     {
+                        if (token.debug && token.verbosity > 0) Console.WriteLine("ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
                         results = Flatten.DeserializeAndFlatten(scanValues[item.Key], new Dictionary<string, object>());
                         results = Flatten.DeserializeAndFlatten(resultStatisticsValues[item.Key], results);
                         XmlDocument doc = new XmlDocument();
                         string xml = resultValues[item.Key];
-                        if (!xml.Contains("~~Error"))
+                        if (xml.Contains("~~Error")) { throw new InvalidOperationException("XML file not properly downloaded"); }
+                        doc.LoadXml(resultValues[item.Key]);
+                        string json = JsonConvert.SerializeXmlNode(doc);
+                        Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
+                        results = Flatten.DeserializeAndFlatten(xmlDict, results);
+                        if (opLogger(project, item.Key))
                         {
-                            doc.LoadXml(resultValues[item.Key]);
-                            string json = JsonConvert.SerializeXmlNode(doc);
-                            Dictionary<string, object> xmlDict = Flatten.DeserializeAndFlatten(json);
-                            results = Flatten.DeserializeAndFlatten(xmlDict, results);
+                            Console.WriteLine("ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
+                            build.writeDictionary(token, results);
                         }
-                        //\build.writeDictionary(token,result);
-                        //var scans = build.fetchScan(token, build.results, customFile);
-                        build.fetchDetails(token, results, masterFile);
-
+                        if (!opLogger())
+                        {
+                            build.fetchDetails(token, results, masterFile);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        if (token.debug && token.verbosity > 0) { Console.WriteLine("Failure fetching detail xml {0} : {1}",item.Key, ex.Message); }
+                        if (token.debug && token.verbosity > 0) Console.WriteLine("Failed to load ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
+                        Console.WriteLine("Failure fetching detail xml {0} : {1}", item.Key, ex.Message);
                     }
                 }
             }
@@ -119,7 +178,7 @@ namespace CxAPI_Store
         private bool fetchReportOptions(string customFile, DataStore store, resultClass token)
         {
             bool comment = false;
-           
+
 
             foreach (string line in File.ReadLines(customFile))
             {
@@ -130,7 +189,7 @@ namespace CxAPI_Store
                     continue;
                 }
                 if (line.StartsWith("*/"))
-              
+
                 {
                     comment = false;
                     continue;
@@ -142,7 +201,7 @@ namespace CxAPI_Store
                 int splitCount = split.Length;
                 if (splitCount == 3)
                 {
-                    split[1] = String.Format("{0}:{1}", split[1] , split[2]);
+                    split[1] = String.Format("{0}:{1}", split[1], split[2]);
                     splitCount = 2;
                 }
                 if (splitCount != 2) { return false; };
@@ -171,11 +230,11 @@ namespace CxAPI_Store
             return true;
         }
 
-    public void Dispose()
-    {
+        public void Dispose()
+        {
+
+        }
 
     }
-
-}
 }
 

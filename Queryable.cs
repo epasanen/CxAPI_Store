@@ -25,7 +25,8 @@ namespace CxAPI_Store
         public string runDate;
         public string overAllSeverity = String.Empty;
         public Dictionary<string, int> allCounts;
-
+        public Dictionary<string, int> nCounts;
+        public Dictionary<string, int> policy;
         public resultClass _token;
 
         public Queryable(resultClass token)
@@ -34,6 +35,9 @@ namespace CxAPI_Store
             tempSet = new DataSet();
             messy = new Dictionary<string, DataSet>() { { "High", new DataSet() }, { "Medium", new DataSet() }, { "Low", new DataSet() }, { "Info", new DataSet() } };
             allCounts = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+            nCounts = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+            policy = new Dictionary<string, int>() { { "High", 30 }, { "Medium", 60 }, { "Low", 90 }, { "Info", 180 } };
+
         }
 
         public void dumpTable(DataTable table)
@@ -43,14 +47,13 @@ namespace CxAPI_Store
             {
                 foreach (DataColumn dc in table.Columns)
                 {
-                    File.AppendAllText(@"C:\scans\hold\dump.txt", String.Format("{0}:{1}\n", dc.ColumnName, dr.ItemArray[dc.Ordinal]));
+                    File.AppendAllText(_token.dump_path + _token.op_result + _token.dump_file, String.Format("{0}:{1}{2}", dc.ColumnName, dr.ItemArray[dc.Ordinal], Environment.NewLine));
                 }
             }
-            //            File.AppendAllText(@"C:\scans\hold\dump.txt", capture);
         }
         public void dumpTables()
         {
-            File.Delete(@"C:\scans\hold\dump.txt");
+            File.Delete(_token.dump_path + _token.op_result + _token.dump_file);
             dumpTable(projects);
             dumpTable(scans);
             dumpTable(summaries);
@@ -62,14 +65,25 @@ namespace CxAPI_Store
 
         public void getByCustomFields(DataSet dataSet)
         {
-            projectsByCustomField(dataSet);
-            dumpTables();
-            riskScoreByBusinessApp();
-            previousVsCurrentScans();
-            openFindingsViolations();
-            byOWASPCategory();
-            scopeOfScan();
-            openDetails();
+            if (_token.dump_operation.Contains("full_dump"))
+            {
+                dumpTables();
+            }
+            else if (_token.dump_operation.Contains("filtered_dump"))
+            {
+                projectsByCustomField(dataSet);
+                dumpTables();
+            }
+            else if (!_token.dump_operation.Contains(":break"))
+            {
+                projectsByCustomField(dataSet);
+                riskScoreByBusinessApp();
+                previousVsCurrentScans();
+                openFindingsViolations();
+                byOWASPCategory();
+                scopeOfScan();
+                openDetails();
+            }
         }
 
 
@@ -167,16 +181,19 @@ namespace CxAPI_Store
                     DataView lastview = new DataView(summaries);
                     lastview.RowFilter = String.Format("Key_Project_Id = {0} and {1}", dr["Key_Project_Id"], mbn.lastquery[0]); //previous month
                     lastview.Sort = "Key_Start_Date DESC";
-                    DataTable lastmonth = lastview.ToTable(false, String.Format("Summary_{0}Severity", severity));
+                    DataTable lastmonth = lastview.ToTable(false, String.Format("Summary_{0}Severity", severity), "Key_Scan_Id");
 
                     DataView thisview = new DataView(summaries);
                     thisview.RowFilter = String.Format("Key_Project_Id = {0} and {1}", dr["Key_Project_Id"], mbn.lastquery[1]); //current month
                     thisview.Sort = "Key_Start_Date DESC";
-                    DataTable thismonth = thisview.ToTable(false, String.Format("Summary_{0}Severity", severity));
+                    DataTable thismonth = thisview.ToTable(false, String.Format("Summary_{0}Severity", severity), "Key_Scan_Id");
 
 
                     object lastsum = lastmonth.Rows.Count > 0 ? lastmonth.Rows[0][0] : 0;
                     object thissum = thismonth.Rows.Count > 0 ? thismonth.Rows[0][0] : 0;
+
+                    long lastscanid = lastmonth.Rows.Count > 0 ? (long)lastmonth.Rows[0][1] : 0;
+                    long thisscanid = thismonth.Rows.Count > 0 ? (long)thismonth.Rows[0][1] : 0;
 
                     lastcount = lastcount + ((lastsum is DBNull) ? 0 : (int)lastsum);
                     thiscount = thiscount + ((thissum is DBNull) ? 0 : (int)thissum);
@@ -198,15 +215,14 @@ namespace CxAPI_Store
         }
         public void openFindingsViolations(bool all = false)
         {
-            Dictionary<string, int> policy = new Dictionary<string, int>() { { "High", 30 }, { "Medium", 60 }, { "Low", 90 }, { "Info", 180 } };
             MonthByNumber mbn = new MonthByNumber(1, "Key_Start_Date");
             DataTable table = new DataTable("openFindingsViolations");
             table.Columns.Add("ComponentName", typeof(String));
             table.Columns.Add("Severity", typeof(String));
             table.Columns.Add("SourceFile", typeof(String));
             table.Columns.Add("DestinationFile", typeof(String));
-            table.Columns.Add("Object", typeof(String));
-            table.Columns.Add("Description", typeof(String));
+            table.Columns.Add("Query", typeof(String));
+            table.Columns.Add("DeepLink", typeof(String));
             table.Columns.Add("FirstFound", typeof(String));
             table.Columns.Add("PolicyViolation", typeof(String));
             DateTime today = DateTime.Now;
@@ -241,11 +257,13 @@ namespace CxAPI_Store
                     }
 
                     DataView startview = new DataView(results);
-                    startview.RowFilter = String.Format("Key_Project_Id = {0} and Result_Severity = '{1}' and Key_Result_FalsePositive <> 'True'", project_id, Key);
+                    startview.RowFilter = String.Format("Key_Project_Id = {0} and Result_Severity = '{1}'", project_id, Key);
+                    startview.Sort = "Key_Start_Date DESC";
                     var start = startview.ToTable(); // first instance
 
                     DataView endview = new DataView(start);
-                    endview.RowFilter = String.Format("Key_Scan_Id = {0}", lastScanId);
+                    endview.RowFilter = String.Format("Key_Scan_Id = {0} and Key_Result_FalsePositive <> 'True'", lastScanId);
+                    endview.Sort = "Key_Start_Date DESC";
                     var end = endview.ToTable();
 
                     foreach (DataRow endrow in end.Rows)
@@ -253,16 +271,22 @@ namespace CxAPI_Store
                         long similarity_id = endrow["Key_Result_SimilarityId"] is DBNull ? 0 : (long)endrow["Key_Result_SimilarityId"];
                         if (similarity_id != 0)
                         {
+                            DataView dv = new DataView(results);
+                            dv.RowFilter = String.Format("Key_Project_Id = {0} and Key_Result_SimilarityId= {1}", dr["Project_Id"], similarity_id);
+                            dv.Sort = "Key_Start_Date ASC";
+
+/*
                             DataView dv = new DataView(start);
-                            string filter = String.Format("Key_Result_SimilarityId = {0} and Result_Severity = '{1}'", similarity_id, Key);
                             dv.RowFilter = String.Format("Key_Result_SimilarityId = {0} and Result_Severity = '{1}'", similarity_id, Key);
-                            startview.Sort = "Key_Start_Date ASC";
+                            startview.Sort = "Key_Start_Date ASC";*/
+
                             if (dv.Count > 0)
                             {
                                 //this persists
                                 var res = dv.ToTable();
                                 DateTime exists = (DateTime)res.Rows[0]["Key_Start_Date"];
                                 long similarityid = (long)res.Rows[0]["Key_Result_SimilarityId"];
+                                string deeplink = res.Rows[0]["Result_DeepLink"] is DBNull ? "" : (string)res.Rows[0]["Result_DeepLink"];
                                 allCounts[Key]++;
                                 if (exists.AddDays(policyLength) < today || all)
                                 {
@@ -276,7 +300,6 @@ namespace CxAPI_Store
                                         string outfile = resultnode.Rows[0]["PathNode_Last_FileName"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_Last_FileName"];
                                         string inline = resultnode.Rows[0]["PathNode_First_Line"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_First_Line"];
                                         string outline = resultnode.Rows[0]["PathNode_Last_Line"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_Last_Line"];
-                                        string name = resultnode.Rows[0]["PathNode_First_Name"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_First_Name"];
                                         string qname = resultnode.Rows[0]["Key_Query_Name"] is DBNull ? "" : (string)resultnode.Rows[0]["Key_Query_Name"];
 
 
@@ -289,8 +312,8 @@ namespace CxAPI_Store
                                         dataRow["Severity"] = Key;
                                         dataRow["SourceFile"] = infile;
                                         dataRow["DestinationFile"] = outfile;
-                                        dataRow["Object"] = name;
-                                        dataRow["Description"] = qname;
+                                        dataRow["Query"] = qname;
+                                        dataRow["DeepLink"] = deeplink;
                                         dataRow["FirstFound"] = exists.ToString("yyyy-MMM-dd");
                                         dataRow["PolicyViolation"] = policyLength;
                                         table.Rows.Add(dataRow);
@@ -379,7 +402,11 @@ namespace CxAPI_Store
                         for (int i = 0; i < 5; i++)
                         {
                             if (!summary.Columns.Contains(String.Format("Summary_ScanState_LanguageStateCollection_{0}_LanguageName", i))) break;
-                            lang.Add((string)summary.Rows[0][String.Format("Summary_ScanState_LanguageStateCollection_{0}_LanguageName", i)]);
+                            string getLang = (string)summary.Rows[0][String.Format("Summary_ScanState_LanguageStateCollection_{0}_LanguageName", i)];
+                            if ((!String.IsNullOrEmpty(getLang)) && !getLang.Contains("Common"))
+                            {
+                                lang.Add(getLang);
+                            }
                         }
                         string joined = string.Join(",", lang);
                         DataRow dataRow = table.NewRow();
@@ -433,7 +460,7 @@ namespace CxAPI_Store
 
                     DataView startview = new DataView(results);
                     startview.RowFilter = String.Format("Key_Project_Id = {0} and Key_Scan_Id = {1} and Result_Severity = '{2}' and Key_Result_FalsePositive <> 'True'", dr["Project_Id"], lastScanId, Key);
-                    var start = startview.ToTable(true, "Key_Result_SimilarityId");
+                    var start = startview.ToTable();
                     foreach (DataRow resultRow in start.Rows)
                     {
                         string infile = String.Empty;
@@ -444,6 +471,7 @@ namespace CxAPI_Store
                         string qname = String.Empty;
 
                         long similarity_id = resultRow["Key_Result_SimilarityId"] is DBNull ? 0 : (long)resultRow["Key_Result_SimilarityId"];
+                        string deeplink = resultRow["Result_DeepLink"] is DBNull ? "" : (string)resultRow["Result_DeepLink"];
                         if (similarity_id != 0)
                         {
 
@@ -455,7 +483,7 @@ namespace CxAPI_Store
                             topview.Sort = "Key_Start_Date ASC";
                             var top = topview.ToTable();
                             DateTime exists = top.Rows.Count > 0 ? (DateTime)top.Rows[0]["Key_Start_Date"] : lastScanDate;
-
+                            nCounts[Key]++;
                             if (exists.AddDays(policy[Key]) < today || all)
                             {
 
@@ -466,19 +494,7 @@ namespace CxAPI_Store
                                     outfile = resultnode.Rows[0]["PathNode_Last_FileName"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_Last_FileName"];
                                     inline = resultnode.Rows[0]["PathNode_First_Line"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_First_Line"];
                                     outline = resultnode.Rows[0]["PathNode_Last_Line"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_Last_Line"];
-                                    name = resultnode.Rows[0]["PathNode_First_Name"] is DBNull ? "" : (string)resultnode.Rows[0]["PathNode_First_Name"];
                                     qname = resultnode.Rows[0]["Key_Query_Name"] is DBNull ? "" : (string)resultnode.Rows[0]["Key_Query_Name"];
-                                    infile = String.IsNullOrEmpty(inline) ? infile.Substring(infile.LastIndexOf('/') + 1) : String.Format("{0}:{1}", infile.Substring(infile.LastIndexOf('/') + 1), inline);
-                                    outfile = String.IsNullOrEmpty(outline) ? outfile.Substring(infile.LastIndexOf('/') + 1) : String.Format("{0}:{1}", outfile.Substring(outfile.LastIndexOf('/') + 1), outline);
-                                }
-                                else
-                                {
-                                    infile = resultRow["Key_Result_FileName"] is DBNull ? "" : (string)resultRow["Key_Result_FileName"];
-                                    outfile = "";
-                                    inline = "";
-                                    outline = "";
-                                    name = "";
-                                    qname = (string)resultRow["Key_Query_Name"];
                                     infile = String.IsNullOrEmpty(inline) ? infile.Substring(infile.LastIndexOf('/') + 1) : String.Format("{0}:{1}", infile.Substring(infile.LastIndexOf('/') + 1), inline);
                                     outfile = String.IsNullOrEmpty(outline) ? outfile.Substring(infile.LastIndexOf('/') + 1) : String.Format("{0}:{1}", outfile.Substring(outfile.LastIndexOf('/') + 1), outline);
                                 }
@@ -488,8 +504,8 @@ namespace CxAPI_Store
                                 dataRow["Severity"] = Key;
                                 dataRow["SourceFile"] = infile;
                                 dataRow["DestinationFile"] = outfile;
-                                dataRow["Object"] = name;
-                                dataRow["Description"] = qname;
+                                dataRow["Query"] = qname;
+                                dataRow["DeepLink"] = deeplink;
                                 dataRow["FirstFound"] = exists.ToString("MMM-dd-yyyy");
                                 dataRow["PolicyViolation"] = policy[Key];
                                 table.Rows.Add(dataRow);
@@ -513,8 +529,8 @@ namespace CxAPI_Store
             table.Columns.Add("Severity", typeof(String));
             table.Columns.Add("SourceFile", typeof(String));
             table.Columns.Add("DestinationFile", typeof(String));
-            table.Columns.Add("Object", typeof(String));
-            table.Columns.Add("Description", typeof(String));
+            table.Columns.Add("Query", typeof(String));
+            table.Columns.Add("DeepLink", typeof(String));
             table.Columns.Add("FirstFound", typeof(String));
             table.Columns.Add("PolicyViolation", typeof(int));
             return table;

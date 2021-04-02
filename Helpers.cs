@@ -1,12 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 
 namespace CxAPI_Store
 {
-    class Helpers
+    public class severityCounters
     {
 
+        public Dictionary<string, int> severityCounter;
+        public severityCounters()
+        {
+            severityCounter = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+        }
+        public severityCounters(int High, int Medium, int Low, int Info)
+        {
+            severityCounter = new Dictionary<string, int>() { { "High", High }, { "Medium", Medium }, { "Low", Low }, { "Info", Info } };
+        }
+
+    }
+    public class agingPolicy
+    {
+
+        public Dictionary<string, int> aging;
+        public Dictionary<string, string> description;
+        public agingPolicy()
+        {
+            aging = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+        }
+        public agingPolicy(int High, int Medium, int Low, int Info)
+        {
+            aging = new Dictionary<string, int>() { { "High", High }, { "Medium", Medium }, { "Low", Low }, { "Info", Info } };
+            description = new Dictionary<string, string>() { { "High", String.Format("High > {0}", High) }, { "High", String.Format("Medium > {0}", Medium) }, { "Low", String.Format("Log > {0}", Low) }, { "Info", String.Format("Info > {0}", Info) } };
+        }
+    }
+    public class dataSetbyKey
+    {
+        public Dictionary<string, DataSet> dataSets;
+        public dataSetbyKey()
+        {
+            dataSets = new Dictionary<string, DataSet>() { { "High", new DataSet() }, { "Medium", new DataSet() }, { "Low", new DataSet() }, { "Info", new DataSet() } };
+        }
+        public void dataSetAdd(string key, DataTable value)
+        {
+            dataSets[key].Tables.Add(value);
+        }
     }
     public class MonthByNumber
     {

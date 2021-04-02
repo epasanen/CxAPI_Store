@@ -79,15 +79,7 @@ namespace CxAPI_Store
                         }
                         break;
                     }
-                case api_action.buildTemplates:
-                    {
-                        using (buildResults buildResults = new buildResults(token))
-                        {
-                            buildResults.buildTemplate(token);
-                        }
-                        break;
-                    }
-
+ 
                 default:
                     {
                         Console.WriteLine("Cannot find valid report name or operation {0}-{1}", token.api_action, token.report_name);

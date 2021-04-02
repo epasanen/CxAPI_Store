@@ -11,13 +11,14 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Linq;
 
 
 namespace CxAPI_Store
 {
-    class buildDataSet : IDisposable
+    public class buildDataSet : IDisposable
     {
         public resultClass token;
         private int maxQueries = 1000;
@@ -29,6 +30,7 @@ namespace CxAPI_Store
         public DataStore dataStore;
         public Dictionary<string, string> masterTemplate;
         public Dictionary<string, string> customKeys;
+        bool isdelete = false;
 
 
 
@@ -75,24 +77,22 @@ namespace CxAPI_Store
             {
                 Dictionary<string, object> query = new Dictionary<string, object>();
                 queryScore = getNodes("Query_", dict, query, queryCount, 0, 0);
-                dataStore.copyAndPurge("queries", query);
-                if (queryScore == 0) break;
+                if (queryScore > 0) dataStore.copyAndPurge("queries", query); else break;
 
                 for (resultCount = 0; resultCount < maxResults; resultCount++)
                 {
                     Dictionary<string, object> results = new Dictionary<string, object>();
                     resultScore = getNodes("Result_", dict, results, queryCount, resultCount, 0);
-                    dataStore.copyAndPurge("results", results);
-
-                    if (resultScore == 0) break;
-
+                    if (resultScore > 0) dataStore.copyAndPurge("results", results); else break;
+ 
                     for (pathNodeCount = 0; pathNodeCount < maxPathNodes; pathNodeCount++)
                     {
                         Dictionary<string, object> nodes = new Dictionary<string, object>();
 
                         pathNodeFirstScore = getNodes("PathNode_First_", dict, nodes, queryCount, resultCount, pathNodeCount);
                         pathNodeLastScore = getandMapLastNode("PathNode_Last_", dict, nodes, queryCount, resultCount);
-                        dataStore.copyAndPurge("nodes", nodes);
+                        if (queryScore > 0) dataStore.copyAndPurge("nodes", nodes); else break;
+
                     }
                 }
             }
@@ -100,6 +100,21 @@ namespace CxAPI_Store
             return;
         }
         public void writeDictionary(resultClass token, Dictionary<string, object> dict, string fileName = "MasterMap.yaml")
+        {
+           
+            if (!isdelete)
+            {
+                File.Delete(token.dump_path + token.os_path + token.dump_file);
+                isdelete = true;
+            }
+            string filepath = token.dump_path + token.os_path + token.dump_file;
+
+            foreach (string key in dict.Keys)
+            {
+                File.AppendAllText(filepath, String.Format("{0} : {1}{2}", key, dict[key] ?? "NULL" , Environment.NewLine));
+            }      
+        }
+        public void dumpDictionary(resultClass token, Dictionary<string, object> dict, string fileName = "MasterMap.yaml")
         {
             string dictText = String.Empty;
 
@@ -117,7 +132,6 @@ namespace CxAPI_Store
             }
             File.WriteAllText(token.template_path + "\\" + fileName, dictText);
         }
-
 
         public bool buildTemplate(resultClass token)
         {
@@ -193,7 +207,10 @@ namespace CxAPI_Store
                 }
 
             }
-            getKeys("CxKeys", dict, results, queryCount, resultCount);
+            if (count > 0)
+            {
+                getKeys("CxKeys", dict, results, queryCount, resultCount);
+            }
             return count;
         }
         private int getKeys(string partial, Dictionary<string, object> dict, Dictionary<string, object> results, int queryCount, int resultCount)
@@ -247,6 +264,11 @@ namespace CxAPI_Store
                 }
                 else
                 {
+                    var match = Regex.Match(realKey.Trim(), @"(Query\.\d|Query\.\d\.Result\.\d|Query\.\d\.Result\.\d\.Path\.PathNode\.\d)");
+                    if (match.Success)
+                    {
+                        return false;
+                    }
                     if (!results.ContainsKey(customFile.Key))
                     {
                         results.Add(customFile.Key, String.Empty);

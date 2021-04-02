@@ -65,9 +65,13 @@ namespace CxAPI_Store
         public string backup_path { get; set; }
         public string template_path { get; set; }
         public string template_file { get; set; }
+        public string dump_path { get; set; }
+        public string dump_file { get; set; }
+        public string dump_operation { get; set; }
         public string master_path { get; set; }
         public string query_filter { get; set; }
         public int result_timeout { get; set; }
+        public int max_length { get; set; }
 
 
         List<ProjectObject> projectClass { get; set; }
@@ -79,9 +83,11 @@ namespace CxAPI_Store
             max_threads = 5;
             max_scans = 0;
             result_timeout = 30;
+            max_length = 256;
             test = false;
             scan_settings = false;
             purge_projects = false;
+            dump_operation = "none";
             severity_filter = "High,Medium,Low,Info";
         }
 

@@ -15,6 +15,7 @@ namespace CxAPI_Store
     {
         public static IConfigurationRoot _configuration;
         public static string[] _keys;
+        public static resultClass _token;
 
         public static string ospath()
         {
@@ -172,7 +173,13 @@ namespace CxAPI_Store
                 { "path|file_path=", "Override file path in configuration",
                   v => token.file_path = v },
                 { "file|file_name=", "Override file name in configuration",
-                  v => token.file_name = v },
+                  v => token.file_name = v },               
+                { "dp|dump_path=", "Dump path for diagnostic testing",
+                  v => token.dump_path = v },
+                { "df|dump_file=", "Dump file name",
+                  v => token.dump_file = v },
+                { "do|dump_operation=", "Dump type and options",
+                  v => token.dump_operation = v },
                 { "sf|severity_filter=", "Filter results by Severity",
                   v => token.severity_filter = v },
                 { "ap|archival_path=", "Override archival path in configuration",
@@ -207,6 +214,8 @@ namespace CxAPI_Store
                   v => token.verbosity = Convert.ToInt32(v) },
                 { "mt|max_threads=", "Change the max number of report requests to CxManager",
                   v => token.max_threads = Convert.ToInt32(v) },
+                { "ml|max_length=", "Change the max size of date extracted from XML",
+                  v => token.max_length = Convert.ToInt32(v) },
                 { "ms|max_scans=", "Change the max number of report requests to CxManager",
                   v => token.max_scans = Convert.ToInt32(v) },
                 { "ff|filename_filter=", "Filter results so only filename matches are reported",
@@ -260,7 +269,8 @@ namespace CxAPI_Store
             {
                 ShowHelp(p);
             }
-            return token;
+            _token = token;
+            return _token;
        }
 
         private static void misc_setup(resultClass token, settingClass _settings)
@@ -275,7 +285,9 @@ namespace CxAPI_Store
             token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
             token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
             token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file;
-          
+            token.dump_path = String.IsNullOrEmpty(token.dump_path) ? token.file_path : token.dump_path;
+            token.dump_file = String.IsNullOrEmpty(token.dump_file) ? token.file_name : token.dump_file;
+
         }
 
         private static void ShowHelp(OptionSet p)

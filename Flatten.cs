@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace CxAPI_Store
 {
     class Flatten
-    {
+    { 
         public static Dictionary<string, object> DeserializeAndFlatten(object obj, Dictionary<string, object> dict = null)
         {
             var json = JsonConvert.SerializeObject(obj);
@@ -106,10 +106,45 @@ namespace CxAPI_Store
                 default:
                     if (!dict.ContainsKey(prefix))
                     {
-                        dict.Add(prefix, ((JValue)token).Value);
+                        dict.Add(quickFix(prefix), trimAndEncode(((JValue)token).Value));
                     }
                     break;
             }
+        }
+
+        private static string quickFix(string fix)
+        {
+            var match = Regex.Match(fix, @"Query\.[a-zA-Z]");
+            if (match.Success)
+            {
+                fix = fix.Replace("Query.", "Query.0.");
+            }
+            match = Regex.Match(fix, @"Result\.[a-zA-Z+@]");
+            if (match.Success)
+            {
+                fix = fix.Replace("Result.", "Result.0.");
+            }
+            match = Regex.Match(fix, @"PathNode\.[a-zA-Z]");
+            if (match.Success)
+            {
+                fix = fix.Replace("PathNode.", "PathNode.0.");
+            }
+
+            return fix;
+        }
+        private static object trimAndEncode(object block)
+        {
+            resultClass _token = Configuration._token;
+            if (block is string)
+            {
+                string change = (string)block;
+                if (change.Length > _token.max_length)
+                {
+                    change = change.Substring(0, _token.max_length);
+                    return (object)change;
+                }
+            }
+            return block;
         }
 
         private static string Join(string prefix, string name)

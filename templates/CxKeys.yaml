@@ -5,6 +5,8 @@ Key_Scan_Id : Summary_Id
 Key_Project_Name : Project_Name
 Key_Project_Name : Scan_ProjectName
 Key_Start_Date : Summary_DateAndTime_StartedOn
+Key_Finish_Date :  Summary_DateAndTime_FinishedOn
+Key_Scan_Type: Scan_ScanType
 Key_Result_FileName : Result_FileName
 Key_Result_FileName: PathNode_First_FileName
 Key_Result_SimilarityId: Result_SimilarityId

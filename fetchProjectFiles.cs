@@ -12,7 +12,7 @@ using static CxAPI_Store.dto.ProjectDetail;
 
 namespace CxAPI_Store
 {
-    class fetchProjectFiles : IDisposable
+    public class fetchProjectFiles : IDisposable
     {
         public List<ProjectObject> CxProjects;
         public Dictionary<string, Teams> CxTeams;
