@@ -45,9 +45,6 @@
     <None Update="templates\MasterMap.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="templates\AnalytixTemplate.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="templates\MasterTemplate.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

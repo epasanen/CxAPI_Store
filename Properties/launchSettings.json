@@ -2,7 +2,7 @@
   "profiles": {
     "CxAPI_Store": {
       "commandName": "Project",
-      "commandLineArgs": "--scan_results --debug --appsettings=c:\\scripts\\appsettings-analytix.json --start_time=01/01/2021 --end_time=01/01/2022  --verbose=1   --template_file=test.cshtml"
+      "commandLineArgs": "--Files_to_DB --debug --appsettings=c:\\scripts\\appsettings-analytix.json --start_time=01/01/2021 --end_time=01/01/2022 --verbose=1 "
     }
   }
 }

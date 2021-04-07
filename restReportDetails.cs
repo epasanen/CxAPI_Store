@@ -78,9 +78,6 @@ namespace CxAPI_Store
 
         public bool fetchReport()
         {
-            fetchAnalytix fx = new fetchAnalytix(token);
-            fx.loadRawFiles();
-            return true;
             DataStore store = new DataStore(token);
             string set_path = token.template_path;
             string fileName = token.template_file;

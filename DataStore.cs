@@ -68,6 +68,8 @@ namespace CxAPI_Store
             table.Columns.Add("Key_Scan_Id", typeof(Int64));
             table.Columns.Add("Key_Project_Name", typeof(String));
             table.Columns.Add("Key_Start_Date", typeof(DateTime));
+            table.Columns.Add("Key_Finish_Date", typeof(DateTime));
+            table.Columns.Add("Key_Scan_Type", typeof(string));
             table.Columns.Add("Key_End_Date", typeof(DateTime));
             table.Columns.Add("Key_Result_FileName", typeof(String));
             table.Columns.Add("Key_Result_SimilarityId", typeof(Int64));
@@ -80,7 +82,8 @@ namespace CxAPI_Store
             table.Columns.Add("Key_Query_Language", typeof(String));
             table.Columns.Add("Key_Result_FalsePositive", typeof(String));
             table.Columns.Add("Key_Result_DetectionDate", typeof(String));
-  
+            
+
             PropertyInfo[] properties = mapObject.GetType().GetProperties();
             foreach (PropertyInfo property in properties)
             {
@@ -103,13 +106,29 @@ namespace CxAPI_Store
             {
                 if (table.Columns.Contains(key))
                 {
-                    newrow[key] = dict[key] ?? DBNull.Value;
+                    if (table.Columns[key].DataType == typeof(DateTime))
+                    {
+                        newrow[key] = dict[key] ?? DateTime.MinValue;
+                    }
+                    else if (table.Columns[key].DataType == typeof(String))
+                    {
+                        newrow[key] = dict[key] ?? String.Empty;
+                    }
+                    else if (table.Columns[key].DataType == typeof(Boolean))
+                    {
+                        newrow[key] = dict[key] ?? false;
+                    }
+                    else
+                    {
+                        newrow[key] = dict[key] ?? 0;
+                    }
                 }
             }
             table.Rows.Add(newrow);
 
             return new Dictionary<string, object>();
         }
+
  
     }
 

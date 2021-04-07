@@ -64,18 +64,18 @@ namespace CxAPI_Store
                         {
                             restStoreResult.fetchResultsAndStore();
                         }
-                        using (restReportDetails restReportDetail = new restReportDetails(token))
+                        using (fetchAnalytix fetch = new fetchAnalytix(token))
                         {
-                            restReportDetail.buildDataSet();
+                            fetch.loadDataSet();
                         }
 
                         break;
                     }
                 case api_action.buildDataSet:
                     {
-                        using (restReportDetails restReportDetail = new restReportDetails(token))
+                        using (fetchAnalytix fetch = new fetchAnalytix(token))
                         {
-                            restReportDetail.buildDataSet();
+                            fetch.loadDataSet();
                         }
                         break;
                     }

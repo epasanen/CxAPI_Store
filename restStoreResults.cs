@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using CxAPI_Store.dto;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace CxAPI_Store
 {
@@ -24,34 +25,41 @@ namespace CxAPI_Store
 
         public bool fetchResultsAndStore()
         {
-            getProjectFiles getProjectFiles = new getProjectFiles(token);
-            getScanResults scanResults = new getScanResults();
-
-            if (getProjectFiles.saveFilteredScans(token))
+            if (Directory.EnumerateFiles(token.archival_path,"sast_project_info.*.log").Any())
             {
+                getProjectFiles getProjectFiles = new getProjectFiles(token);
+                getScanResults scanResults = new getScanResults();
 
-                foreach (ScanObject scan in getProjectFiles.CxScans)
+                if (getProjectFiles.saveFilteredScans(token))
                 {
-                    string scanName = String.Format("Results_{0:D10}_{1:yyyy-MM-ddTHH-mm-ssZ}.xml", scan.Id, scan.DateAndTime.StartedOn);
-                    string scanDir = String.Format("{0}{1}{2:D10}{3}{4:D10}", token.archival_path, _osPath, Convert.ToInt64(scan.Project.Id), _osPath, scan.Id);
-                    string scanPath = String.Format("{0}{1}{2}", scanDir, _osPath, scanName);
 
-                    if (!File.Exists(scanPath))
+                    foreach (ScanObject scan in getProjectFiles.CxScans)
                     {
-                        ReportResult result = scanResults.SetResultRequest(scan.Id, "XML", token);
-                        if (result != null)
+                        string scanName = String.Format("Results_{0:D10}_{1:yyyy-MM-ddTHH-mm-ssZ}.xml", scan.Id, scan.DateAndTime.StartedOn);
+                        string scanDir = String.Format("{0}{1}{2:D10}{3}{4:D10}", token.archival_path, _osPath, Convert.ToInt64(scan.Project.Id), _osPath, scan.Id);
+                        string scanPath = String.Format("{0}{1}{2}", scanDir, _osPath, scanName);
+
+                        if (!File.Exists(scanPath))
                         {
-                            trace.Add(new ReportTrace(scan.Project.Id, scan.Project.Name, getProjectFiles.CxTeams[scan.OwningTeamId].fullName, scan.DateAndTime.StartedOn, scan.Id, result.ReportId, "XML"));
-                        }
-                        if (trace.Count % token.max_threads == 0)
-                        {
-                            waitForResult(token, trace, scanResults);
-                            trace.Clear();
+                            ReportResult result = scanResults.SetResultRequest(scan.Id, "XML", token);
+                            if (result != null)
+                            {
+                                trace.Add(new ReportTrace(scan.Project.Id, scan.Project.Name, getProjectFiles.CxTeams[scan.OwningTeamId].fullName, scan.DateAndTime.StartedOn, scan.Id, result.ReportId, "XML"));
+                            }
+                            if (trace.Count % token.max_threads == 0)
+                            {
+                                waitForResult(token, trace, scanResults);
+                                trace.Clear();
+                            }
                         }
                     }
+                    waitForResult(token, trace, scanResults);
+                    trace.Clear();
                 }
-                waitForResult(token, trace, scanResults);
-                trace.Clear();
+            }
+            else
+            {
+                throw new Exception("This is a CxAnalytix directory. Run CxAnalytix to update files");
             }
             return true;
         }

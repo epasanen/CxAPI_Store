@@ -264,14 +264,14 @@ namespace CxAPI_Store
                 }
                 else
                 {
-                    var match = Regex.Match(realKey.Trim(), @"(Query\.\d|Query\.\d\.Result\.\d|Query\.\d\.Result\.\d\.Path\.PathNode\.\d)");
-                    if (match.Success)
-                    {
-                        return false;
-                    }
+                    //var match = Regex.Match(realKey.Trim(), @"(Query\.\d|Query\.\d\.Result\.\d|Query\.\d\.Result\.\d\.Path\.PathNode\.\d)");
+                    //if (match.Success)
+                    //{
+                    //    return false;
+                    //}
                     if (!results.ContainsKey(customFile.Key))
                     {
-                        results.Add(customFile.Key, String.Empty);
+                        results.Add(customFile.Key, null);
                         return false;
                     }
                 }

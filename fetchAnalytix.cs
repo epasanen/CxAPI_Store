@@ -12,31 +12,123 @@ using Newtonsoft.Json;
 
 namespace CxAPI_Store
 {
-    public class fetchAnalytix
+    public class fetchAnalytix : IDisposable
     {
-        public resultClass _token;
-        public Dictionary<long, CxProject> CxProjects;
-        public Dictionary<long, SortedDictionary<long, CxScan>> CxScans;
-        public Dictionary<long, SortedDictionary<long, List<CxResult>>> CxResults;
+        DataSet dataSet;
+        resultClass _token;
 
-        public fetchAnalytix(resultClass token)
+        public fetchAnalytix(resultClass token, bool init = true)
         {
-            CxProjects = new Dictionary<long, CxProject>();
-            CxScans = new Dictionary<long, SortedDictionary<long, CxScan>>();
-            CxResults = new Dictionary<long, SortedDictionary<long, List<CxResult>>>();
+            dataSet = new DataSet();
+            dataSet.Tables.Add(new DataTable("Projects"));
+            dataSet.Tables.Add(new DataTable("Scans"));
+            dataSet.Tables.Add(new DataTable("Results"));
             _token = token;
+            if (init)
+            {
+                initAllTables();
+            }
+        }
+        public bool saveDataSet()
+        {
+            if (!dataSet.ExtendedProperties.ContainsKey("LastUpdate"))
+            {
+                dataSet.ExtendedProperties.Add("LastUpdate", DateTime.UtcNow.ToString());
+            }
+            else
+            {
+                dataSet.ExtendedProperties["LastUpdate"] = DateTime.UtcNow.ToString();
+            }
+            dataSet.WriteXmlSchema(_token.archival_path + _token.os_path + "CxSchema.xml");
+            dataSet.WriteXml(_token.archival_path + _token.os_path + "Cxdata.xml");
+            return true;
+        }
+        public bool restoreDataSet()
+        {
+            if (File.Exists(_token.archival_path + _token.os_path + "CxSchema.xml"))
+            {
+                dataSet.ReadXmlSchema(_token.archival_path + _token.os_path + "CxSchema.xml");
+                dataSet.ReadXml(_token.archival_path + _token.os_path + "Cxdata.xml");
+            }
+
+            return true;
+        }
+        public bool initAllTables()
+        {
+            // create projects
+            initDataTable(new CxProject(), "Projects", new List<string>() { "ProjectId" });
+            initDataTable(new CxScan(), "Scans", new List<string>() { "ProjectId", "ScanId" });
+            initDataTable(new CxResult(), "Results", new List<string>() { "ProjectId", "ScanId", "VulnerabilityId" });
+            return true;
+        }
+
+        private bool initDataTable(object mapObject, string select, List<string> primaryKeys)
+        {
+            DataTable table = dataSet.Tables[select];
+            List<DataColumn> cols = new List<DataColumn>();
+            PropertyInfo[] properties = mapObject.GetType().GetProperties();
+            foreach (PropertyInfo property in properties)
+            {
+                var name = property.Name;
+                var prop = property.PropertyType;
+                table.Columns.Add(name, prop);
+                if (primaryKeys.Contains(name))
+                {
+                    cols.Add(table.Columns[name]);
+                }
+            }
+            table.PrimaryKey = cols.ToArray();
+            return true;
+        }
+
+        private bool addRow(object mapObject, string select)
+        {
+            if (_token.debug && _token.verbosity > 0) Console.WriteLine("Adding to table {0}", select);
+            DataTable table = dataSet.Tables[select];
+            PropertyInfo[] properties = mapObject.GetType().GetProperties();
+            DataRow dr = table.NewRow();
+            foreach (PropertyInfo property in properties)
+            {
+                var name = property.Name;
+                //var prop = property.PropertyType;
+                var value = property.GetValue(mapObject, null);
+                if (_token.debug && _token.verbosity > 3) Console.WriteLine("Adding '{0}':{1} to table {2}", name, value, select);
+                dr[name] = value;
+            }
+            table.Rows.Add(dr);
+            return true;
+        }
+
+
+        public void loadDataSet(bool startNew = true)
+        {
+            if (!startNew)
+                restoreDataSet();
+
+            if (Directory.EnumerateFiles(_token.archival_path, "sast_project_info.*.log").Any())
+            {
+                if (_token.debug && _token.verbosity > 0) Console.WriteLine("Using data from CxAnalytix");
+                loadAnalytix();
+            }
+            else
+            {
+                if (_token.debug && _token.verbosity > 0) Console.WriteLine("Using data from CxStore");
+                loadRawFiles();
+            }
 
         }
 
-        public void loadAnalytix()
+        private void loadAnalytix()
         {
             getProjects();
             getScans();
             getResults();
+            saveDataSet();
         }
-        public void loadRawFiles()
+        private void loadRawFiles()
         {
             getRawData();
+            saveDataSet();
         }
         private bool getProjects()
         {
@@ -45,10 +137,10 @@ namespace CxAPI_Store
             {
                 foreach (string content in File.ReadAllLines(filename))
                 {
-                    CxProject project = JsonConvert.DeserializeObject<CxProject>(content);
-                    if (!CxProjects.ContainsKey(project.ProjectId))
+                    CxProjectJson project = JsonConvert.DeserializeObject<CxProjectJson>(content);
+                    if (!dataSet.Tables["Projects"].AsEnumerable().Any(row => project.ProjectId == row.Field<long>("ProjectId")))
                     {
-                        CxProjects.Add(project.ProjectId, project);
+                        addRow(project.convertObject(), "Projects");
                     }
                 }
                 break;
@@ -62,16 +154,13 @@ namespace CxAPI_Store
             {
                 foreach (string content in File.ReadAllLines(filename))
                 {
-                    CxScan scan = JsonConvert.DeserializeObject<CxScan>(content);
-                    if (!CxScans.ContainsKey(scan.ProjectId))
+                    CxScan scans = JsonConvert.DeserializeObject<CxScan>(content);
+                    if (!dataSet.Tables["Scans"].AsEnumerable().Any(row => scans.ProjectId == row.Field<long>("ProjectId") && scans.ScanId == row.Field<long>("ScanId")))
                     {
-                        CxScans.Add(scan.ProjectId, new SortedDictionary<long, CxScan>());
-                    }
-                    if (!CxScans[scan.ProjectId].ContainsKey(scan.ScanId))
-                    {
-                        CxScans[scan.ProjectId].Add(scan.ScanId, scan);
+                        addRow(scans, "Scans");
                     }
                 }
+
                 break;
             }
             return true;
@@ -83,17 +172,11 @@ namespace CxAPI_Store
             {
                 foreach (string content in File.ReadAllLines(filename))
                 {
-                    CxResult result = JsonConvert.DeserializeObject<CxResult>(content);
-                    if (!CxResults.ContainsKey(result.ProjectId))
+                    CxResult results = JsonConvert.DeserializeObject<CxResult>(content);
+                    if (!dataSet.Tables["Results"].AsEnumerable().Any(row => results.ProjectId == row.Field<long>("ProjectId") && results.ScanId == row.Field<long>("ScanId") && results.VulnerabilityId == row.Field<string>("VulnerabilityId")))
                     {
-                        CxResults.Add(result.ProjectId, new SortedDictionary<long, List<CxResult>>());
+                        addRow(results, "Results");
                     }
-                    if (!CxResults[result.ProjectId].ContainsKey(result.ScanId))
-                    {
-                        CxResults[result.ProjectId].Add(result.ScanId, new List<CxResult>());
-                    }
-                    CxResults[result.ProjectId][result.ScanId].Add(result);
-
                 }
                 break;
             }
@@ -107,275 +190,191 @@ namespace CxAPI_Store
 
         private void mapAnalytixFields(DataSet dataSet, long projectId)
         {
-            var template = readAnalytixTemplate();
-            maptoprojects(template, dataSet, projectId);
-
+            maptoprojects(dataSet, projectId);
+            maptoscans(dataSet, projectId);
+            maptoresults(dataSet, projectId);
         }
 
-        private CxProject maptoprojects(Dictionary<string, object> template, DataSet dataSet, long projectId)
+        private void maptoprojects(DataSet ds, long projectId)
         {
-            var results = from projects in dataSet.Tables["projects"].AsEnumerable()
-                          where projects.Field<long>("Project_Id") == projectId
-                          select new
+            var results = from projects in ds.Tables["projects"].AsEnumerable()
+                          where projects.Field<long>("Key_Project_Id") == projectId
+                          select new CxProject
                           {
-                              ProjectId = (long)projects["Project_ID"],
-                              Policies = "compute{Dictionary(unk, unk)}",
+                              ProjectId = (long)projects["Key_Project_Id"],
+                              ProjectName = (string)projects["Key_Project_Name"],
+                              Policies = "",
                               TeamName = (string)projects["Project_Team_Name"],
-                              Preset = (long)projects["Project_Preset_Name"],
-                              CustomFields = "compute{ Dictionary(Project_customFields_~node_name, Project_customFields_~node_value)}",
-                              SastLastScanDate = "compute{ Query(summaries, orderby = Summary_DateAndTime_FinishedOn)}",
-                              SastScans = "compute{ Query(summaries, count = Summary_DateAndTime_FinishedOn)}"
+                              Preset = (string)projects["Project_Preset_Name"],
+                              CustomFields = mapDictionary(ds, "Project_customFields_~node_name", "Project_customFields_~node_value"),
+                              SastLastScanDate = (DateTime)mapQueryLast(ds, "Summary_DateAndTime_FinishedOn"),
+                              SastScans = (int)mapQueryCount(ds, "Summary_DateAndTime_FinishedOn")
                           };
-            return (CxProject)mapKeystoValues(results, new CxProject());
+
+            foreach (CxProject project in results)
+            {
+                if (!dataSet.Tables["Projects"].AsEnumerable().Any(row => project.ProjectId == row.Field<long>("ProjectId")))
+                {
+                    addRow(project, "Projects");
+                }
+            }
         }
-        private CxScan maptoscans(DataSet dataSet, long projectId)
+        private void maptoscans(DataSet ds, long projectId)
         {
 
-            IEnumerable results = from scan in dataSet.Tables["scans"].AsEnumerable()
-                          join summary in dataSet.Tables["summaries"].AsEnumerable() on (long)scan["Key_Scan_Id"] equals (long)summary["Key_Scan_Id"]
-                          where scan.Field<long>("Project_Id") == projectId
-                          select new
+            var results = from scan in ds.Tables["scans"].AsEnumerable()
+                          join project in ds.Tables["projects"].AsEnumerable() on (long)scan["Key_Project_Id"] equals (long)project["Key_Project_Id"]
+                          join summary in ds.Tables["summaries"].AsEnumerable() on (long)scan["Key_Scan_Id"] equals (long)summary["Key_Scan_Id"]
+                          where scan.Field<long>("Key_Project_Id") == projectId
+                          select new CxScan
                           {
                               ScanStarted = (DateTime)summary["Summary_DateAndTime_StartedOn"],
                               ScanFinished = (DateTime)summary["Summary_DateAndTime_FinishedOn"],
                               EngineStart = (DateTime)summary["Summary_DateAndTime_EngineStartedOn"],
                               EngineFinished = (DateTime)summary["Summary_DateAndTime_EngineFinishedOn"],
-                              FileCount = (DateTime)summary["Summary_ScanState_LinesOfCode"],
+                              FileCount = (int)summary["Summary_ScanState_LinesOfCode"],
                               LinesOfCode = (int)summary["Summary_ScanState_FilesCount"],
                               FailedLinesOfCode = (int)summary["Summary_ScanState_FailedLinesOfCode"],
                               CxVersion = (string)summary["Summary_ScanState_CxVersion"],
-                              Languages = "compute{ List(Summary_ScanState_LanguageStateCollection_~node_LanguageName)}",
+                              Languages = mapList(ds, "Summary_ScanState_LanguageStateCollection_~node_LanguageName"),
                               Initiator = (string)summary["Summary_InitiatorName"],
-                              ScanRisk = (DateTime)summary["Summary_ScanRisk"],
-                              ScanRiskSeverity = (DateTime)summary["Summary_ScanRiskSeverity"],
-                              High = (DateTime)summary["Summary_HighSeverity"],
-                              Medium = (DateTime)summary["Summary_MediumSeverity"],
-                              Low = (DateTime)summary["Summary_LowSeverity"],
-                              Info = (DateTime)summary["Summary_InfoSeverity"],
-                              ProjectId = (DateTime)scan["Scan_ProjectId"],
-                              ProjectName = (DateTime)scan["Scan_ProjectName"],
-                              DeepLink = (DateTime)scan["DeepLink"],
+                              ScanRisk = (int)summary["Summary_ScanRisk"],
+                              ScanRiskSeverity = (int)summary["Summary_ScanRiskSeverity"],
+                              High = (int)summary["Summary_HighSeverity"],
+                              Medium = (int)summary["Summary_MediumSeverity"],
+                              Low = (int)summary["Summary_LowSeverity"],
+                              Info = (int)summary["Summary_InfoSeverity"],
+                              ProjectId = (long)scan["Key_Project_Id"],
+                              ProjectName = (string)scan["Key_Project_Name"],
+                              DeepLink = (string)scan["Scan_DeepLink"],
                               ScanStart = (DateTime)scan["Scan_ScanStart"],
-                              Preset = (DateTime)scan["Scan_Preset"],
-                              ScanTime = (DateTime)scan["Scan_ScanTime"],
-                              Product = "compute{System.Format(\"{0}\",\"SAST\")}",
+                              Preset = (string)scan["Scan_Preset"],
+                              ScanTime = (string)scan["Scan_ScanTime"],
+                              ScanProduct = "SAST",
                               ReportCreationTime = (DateTime)scan["Scan_ReportCreationTime"],
-                              TeamName = (DateTime)scan["Scan_Team"],
-                              ScanComments = (DateTime)scan["Scan_ScanComments"],
-                              ScanType = (DateTime)scan["Scan_ScanType"],
-                              SourceOrigin = (DateTime)scan["Scan_SourceOrigin"]
+                              TeamName = (string)scan["Scan_Team"],
+                              ScanComments = (string)scan["Scan_ScanComments"],
+                              ScanType = (string)scan["Scan_ScanType"],
+                              SourceOrigin = (string)scan["Scan_SourceOrigin"],
+                              ScanId = (long)scan["Scan_ScanId"]
                           };
-            return (CxProject)mapKeystoValues(results, new CxProject());
 
-        }
-
-        private object mapKeystoValues(IEnumerable dr, object target)
-        {
-            foreach (PropertyInfo prop in target.GetType().GetProperties())
+            foreach (CxScan scan in results)
             {
-                var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                string property = prop.Name;
-                if (dr.
+                if (!dataSet.Tables["Scans"].AsEnumerable().Any(row => scan.ProjectId == row.Field<long>("ProjectId") && scan.ScanId == row.Field<long>("ScanId")))
                 {
-                    if (key.Contains("compute"))
-                    {
-                        target = mapComputedValues(target, dr, key, prop);
-                    }
-                    else
-                    {
-                        if (dr.Table.Columns.Contains(key))
-                        {
-                            var result = dr[key];
-                            if (_token.debug && _token.verbosity > 0) Console.WriteLine("Target {0} column {1} value {2}", target, key, result);
-
-                            if (type == typeof(DateTimeOffset))
-                            {
-                                prop.SetValue(target, result is DBNull ? DateTimeOffset.MinValue : (DateTimeOffset)result);
-                            }
-                            else if (type == typeof(DateTime))
-                            {
-                                prop.SetValue(target, result is DBNull ? DateTime.MinValue : (DateTime)result);
-                            }
-                            else if (type == typeof(long))
-                            {
-                                prop.SetValue(target, result is DBNull ? 0 : Convert.ToInt64(result));
-                            }
-                            else if (type == typeof(int))
-                            {
-                                prop.SetValue(target, result is DBNull ? 0 : Convert.ToInt32(result));
-                            }
-                            else if (type == typeof(string))
-                            {
-                                prop.SetValue(target, result is DBNull ? String.Empty : result.ToString());
-                            }
-                        }
-                        else
-                        {
-                            Console.Error.WriteLine(String.Format("Cannot find column {0} in table {1}", key, dr.Table.TableName));
-                        }
-                    }
-
-                }
-                else
-                {
-                    Console.Error.WriteLine(String.Format("Cannot find {0} in template file"), property);
-                    return null;
+                    addRow(scan, "Scans");
                 }
             }
-
-            return target;
+        }
+        private void maptoresults(DataSet ds, long projectId)
+        {
+            var results = from query in ds.Tables["queries"].AsEnumerable()
+                          join project in ds.Tables["projects"].AsEnumerable() on (long)query["Key_Project_Id"] equals (long)project["Key_Project_Id"]
+                          join result in ds.Tables["results"].AsEnumerable() on (long)query["Key_Scan_Id"] equals (long)result["Key_Scan_Id"]
+                          join node in ds.Tables["nodes"].AsEnumerable() on (long)query["Key_Scan_Id"] equals (long)node["Key_Scan_Id"]
+                          where query.Field<long>("Key_Project_Id") == projectId
+                          select new CxResult
+                          {
+                              FalsePositive = (string)result["Result_FalsePositive"],
+                              NodeCodeSnippet = (string)node["PathNode_First_Snippet_Line_Code"],
+                              NodeColumn = (int)node["PathNode_First_Column"],
+                              NodeFileName = (string)node["PathNode_First_FileName"],
+                              NodeId = (long)node["PathNode_First_NodeId"],
+                              NodeLength = (int)node["PathNode_First_Length"],
+                              NodeLine = (int)node["PathNode_First_Line"],
+                              NodeName = (string)node["PathNode_First_Name"],
+                              NodeType = (string)node["PathNode_First_Type"],
+                              PathId = (int)result["Result_PathId"],
+                              ProjectId = (long)project["Key_Project_Id"],
+                              ProjectName = (string)project["Key_Project_Name"],
+                              QueryCategories = (string)query["Query_categories"],
+                              QueryCweId = (int)query["Query_cweId"],
+                              QueryGroup = (string)query["Query_group"],
+                              QueryId = (long)query["Query_id"],
+                              QueryLanguage = (string)query["Query_Language"],
+                              QueryName = (string)query["Query_name"],
+                              QuerySeverity = (string)query["Query_Severity"],
+                              QueryVersionCode = (string)query["Query_QueryVersionCode"],
+                              Remark = (string)result["Result_Remark"],
+                              ResultDeepLink = (string)result["Result_DeepLink"],
+                              ResultId = (long)result["Result_ResultId"],
+                              ResultSeverity = (string)result["Result_Severity"],
+                              ScanFinished = (DateTime)result["Key_Finish_Date"],
+                              ScanId = (long)result["Key_Scan_Id"],
+                              ScanProduct = "SAST",
+                              ScanType = (string)result["Key_Scan_Type"],
+                              SimilarityId = (long)result["Result_SimilarityId"],
+                              SinkColumn = (int)node["PathNode_Last_Column"],
+                              SinkFileName = (string)node["PathNode_Last_FileName"],
+                              SinkLine = (int)node["PathNode_Last_Line"],
+                              State = (int)result["Result_state"],
+                              Status = (string)result["Result_Status"],
+                              TeamName = (string)project["Key_Project_Team_Name"],
+                              VulnerabilityId = String.Format("{0}{1:D4}", (long)result["Result_ResultId"], (int)result["Result_PathId"])
+                          };
+            foreach (CxResult result in results)
+            {
+                if (!dataSet.Tables["Results"].AsEnumerable().Any(row => result.ProjectId == row.Field<long>("ProjectId") && result.ScanId == row.Field<long>("ScanId") && result.VulnerabilityId == row.Field<string>("VulnerabilityId")))
+                {
+                    addRow(result, "Results");
+                }
+            }
         }
 
-        private object mapComputedValues(object target, DataRow dr, string value, PropertyInfo prop)
-        {
-            string strip = value.Substring(value.IndexOf('{') + 1, (value.LastIndexOf('}') - (value.IndexOf('{') + 1)));
-            string values = strip.Substring(strip.IndexOf('(') + 1, (strip.LastIndexOf(')') - (strip.IndexOf('(') + 1)));
-            if (strip.Contains("Dictionary"))
-            {
-                prop.SetValue(target, mapDictionary(values, dr));
-            }
-            else if (strip.Contains("List"))
-            {
-                prop.SetValue(target, mapList(values, dr));
-            }
-            else if (strip.Contains("String.Format"))
-            {
-                prop.SetValue(target, mapStringFormat(values, dr));
-            }
-            else if (strip.Contains("Query"))
-            {
-                prop.SetValue(target, mapQuery(values, dr));
-            }
-            return target;
 
-        }
-        private Dictionary<string, object> mapDictionary(string values, DataRow dr)
+        private string mapDictionary(DataSet ds, string keyField, string valueField)
         {
-            Dictionary<string, object> dict = new Dictionary<string, object>();
+            string result = String.Empty;
             for (int i = 0; i < 10; i++)
             {
-                string repl = values.Replace("~node", i.ToString());
-                var keyval = repl.Split(',');
-                if (dr.Table.Columns.Contains(keyval[0].Trim()))
+                string key = keyField.Replace("~node", i.ToString());
+                string value = valueField.Replace("~node", i.ToString());
+                if (ds.Tables["projects"].Columns.Contains(key.Trim()))
                 {
-                    if (!String.IsNullOrEmpty(dr[keyval[0]].ToString().Trim()))
-                        dict.Add(dr[keyval[0].Trim()].ToString(), dr[keyval[1].Trim()]);
+                    string okey = ds.Tables["projects"].AsEnumerable().Select(s => s.Field<string>(key)).FirstOrDefault();
+                    string oval = ds.Tables["projects"].AsEnumerable().Select(s => s.Field<string>(value)).FirstOrDefault();
+                    if (!String.IsNullOrEmpty(okey))
+                    {
+                        result += String.Format("{{{0}:{1}}}", okey, oval);
+                    }
                 }
                 else
                 {
                     break;
                 }
             }
-            return dict;
+            return result;
         }
-        private List<object> mapList(string values, DataRow dr)
+        private string mapList(DataSet ds, string value)
         {
-            List<object> list = new List<object>();
+            string result = String.Empty;
             for (int i = 0; i < 10; i++)
             {
-                string repl = values.Replace("~node", i.ToString());
-                if (dr.Table.Columns.Contains(repl))
+                string repl = value.Replace("~node", i.ToString());
+                if (ds.Tables["queries"].Columns.Contains(repl))
                 {
-                    list.Add(dr[repl]);
+                    result += String.Format("{0};", ds.Tables["queries"].AsEnumerable().Select(s => s.Field<string>(repl)).FirstOrDefault());
                 }
                 else
                 {
                     break;
                 }
             }
-            return list;
+
+            return result;
         }
-        private string mapStringFormat(string values, DataRow dr)
+
+        private object mapQueryLast(DataSet ds, string field)
         {
-            var split = values.Split(',').ToList();
-            string format = split[0];
-            split.Remove(format);
-            return (String.Format(format, split.ToArray()));
+            return ds.Tables["summaries"].AsEnumerable().Select(s => s.Field<DateTime>(field)).OrderByDescending(f => f).FirstOrDefault();
         }
-        private object mapQuery(string values, DataRow dr)
+        private object mapQueryCount(DataSet ds, string field)
         {
-            var split = values.Split(',').ToList();
-            DataTable dt = dr.Table.DataSet.Tables[split[0]];
-            var field = split[1].Split('=');
-            if (field[0].Contains("orderby"))
-            {
-                return dt.AsEnumerable().Select(s => s.Field<DateTime>(field[1])).OrderByDescending(f => f).FirstOrDefault();
-            }
-            if (field[0].Contains("count"))
-            {
-                return dt.AsEnumerable().Select(s => s.Field<DateTime>(field[1])).Count();
-            }
-            return null;
-
+            return ds.Tables["summaries"].AsEnumerable().Select(s => s.Field<DateTime>(field)).Count();
         }
 
 
-        /*      private CxProject maptoscans(Dictionary<string, object> template, DataSet dataSet, long projectId)
-              {
-                  var project = new CxProject();
-                  var dt1 = dataSet.Tables["projects"];
-                  var results = from table1 in dt1.AsEnumerable()
-                                join table2 in dt2.AsEnumerable() on (int)table1["CustID"] equals (int)table2["CustID"]
-                                select new
-                                {
-                                    CustID = (int)table1["CustID"],
-                                    ColX = (int)table1["ColX"],
-                                    ColY = (int)table1["ColY"],
-                                    ColZ = (int)table2["ColZ"]
-                                };
-
-              }
-
-              private CxProject maptoscans(Dictionary<string, object> template, DataSet dataSet, long projectId)
-              {
-                  var project = new CxProject();
-                  var dt1 = dataSet.Tables["projects"];
-                  var results = from table1 in dt1.AsEnumerable()
-                                select new
-                                {
-                                    CustID = (int)table1["CustID"],
-                                    ColX = (int)table1["ColX"],
-                                    ColY = (int)table1["ColY"],
-                                    ColZ = (int)table2["ColZ"]
-                                };
-
-              }
-              /*
-          foreach (var item in results)
-          {
-              Console.WriteLine(String.Format("ID = {0}, ColX = {1}, ColY = {2}, ColZ = {3}", item.CustID, item.ColX, item.ColY, item.ColZ));
-          }
-          Console.ReadLine();
-                        foreach (var car in carList)
-                        {
-                            foreach (PropertyInfo prop in car.GetType().GetProperties())
-                            {
-                                var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                                if (type == typeof(DateTime))
-                                {
-                                    Console.WriteLine(prop.GetValue(car, null).ToString());
-                                }
-                            }
-                        }
-              */
-
-
-
-        private Dictionary<string, object> readAnalytixTemplate()
-        {
-            Dictionary<string, object> template = new Dictionary<string, object>();
-            string masterFile = _token.master_path + _token.os_path + "AnalytixTemplate.yaml";
-            foreach (string line in File.ReadLines(masterFile))
-            {
-                string[] keyval = line.Split(':');
-                if (keyval.Length == 2)
-                {
-                    template.Add(keyval[0].Trim(), keyval[1].Trim());
-                }
-            }
-
-            return template;
-        }
         private void analytixTransform()
         {
             fetchProjectFiles fetchProjects = new fetchProjectFiles(_token);
@@ -439,6 +438,11 @@ namespace CxAPI_Store
             result = Flatten.DeserializeAndFlatten(projectSettings, result);
             result = Flatten.DeserializeAndFlatten(projectDetails, result);
             return result;
+        }
+
+        public void Dispose()
+        {
+           
         }
     }
 }

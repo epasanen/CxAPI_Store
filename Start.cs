@@ -28,6 +28,7 @@ namespace CxAPI_Store
             catch (Exception ex)
             {
                 dsp.Elapsed_Time();
+                
                 Console.WriteLine(ex.ToString());
                 if (_options.test)
                 {

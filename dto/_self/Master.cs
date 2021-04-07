@@ -6,8 +6,8 @@ namespace CxAPI_Store.dto
 {
     public class MasterDTO
     {
-        public int Project_Id { get; set; }
-        public int Project_TeamId { get; set; }
+        public long Project_Id { get; set; }
+        public long Project_TeamId { get; set; }
         public string Project_Name { get; set; }
         public bool Project_isPublic { get; set; }
         public string Project_sourceSettingsLink_type { get; set; }
@@ -78,9 +78,9 @@ namespace CxAPI_Store.dto
         public string Summary_ResultsStatistics_Link { get; set; }
         public string Summary_ScanState_Path { get; set; }
         public string Summary_ScanState_SourceId { get; set; }
-        public string Summary_ScanState_FilesCount { get; set; }
-        public string Summary_ScanState_LinesOfCode { get; set; }
-        public string Summary_ScanState_FailedLinesOfCode { get; set; }
+        public int Summary_ScanState_FilesCount { get; set; }
+        public int Summary_ScanState_LinesOfCode { get; set; }
+        public int Summary_ScanState_FailedLinesOfCode { get; set; }
         public string Summary_ScanState_CxVersion { get; set; }
         public string Summary_ScanState_LanguageStateCollection_0_LanguageId { get; set; }
         public string Summary_ScanState_LanguageStateCollection_0_LanguageName { get; set; }
@@ -125,26 +125,26 @@ namespace CxAPI_Store.dto
         public DateTime Summary_StatisticsCalculationDate { get; set; }
         public string Scan_InitiatorName { get; set; }
         public string Scan_Owner { get; set; }
-        public string Scan_ScanId { get; set; }
-        public string Scan_ProjectId { get; set; }
+        public long Scan_ScanId { get; set; }
+        public long Scan_ProjectId { get; set; }
         public string Scan_ProjectName { get; set; }
         public string Scan_TeamFullPathOnReportDate { get; set; }
         public string Scan_DeepLink { get; set; }
-        public string Scan_ScanStart { get; set; }
+        public DateTime Scan_ScanStart { get; set; }
         public string Scan_Preset { get; set; }
         public string Scan_ScanTime { get; set; }
         public string Scan_LinesOfCodeScanned { get; set; }
         public string Scan_FilesScanned { get; set; }
-        public string Scan_ReportCreationTime { get; set; }
+        public DateTime Scan_ReportCreationTime { get; set; }
         public string Scan_Team { get; set; }
         public string Scan_CheckmarxVersion { get; set; }
         public string Scan_ScanComments { get; set; }
         public string Scan_ScanType { get; set; }
         public string Scan_SourceOrigin { get; set; }
         public string Scan_Visibility { get; set; }
-        public string Query_id { get; set; }
+        public long Query_id { get; set; }
         public string Query_categories { get; set; }
-        public string Query_cweId { get; set; }
+        public int Query_cweId { get; set; }
         public string Query_name { get; set; }
         public string Query_group { get; set; }
         public string Query_Severity { get; set; }
@@ -154,7 +154,7 @@ namespace CxAPI_Store.dto
         public string Query_SeverityIndex { get; set; }
         public string Query_QueryPath { get; set; }
         public string Query_QueryVersionCode { get; set; }
-        public string Result_NodeId { get; set; }
+        public long Result_NodeId { get; set; }
         public string Result_FileName { get; set; }
         public string Result_Status { get; set; }
         public string Result_Line { get; set; }
@@ -162,30 +162,30 @@ namespace CxAPI_Store.dto
         public string Result_FalsePositive { get; set; }
         public string Result_Severity { get; set; }
         public string Result_AssignToUser { get; set; }
-        public string Result_state { get; set; }
+        public int Result_state { get; set; }
         public string Result_Remark { get; set; }
         public string Result_DeepLink { get; set; }
         public string Result_SeverityIndex { get; set; }
         public string Result_DetectionDate { get; set; }
-        public string Result_ResultId { get; set; }
-        public string Result_PathId { get; set; }
-        public string Result_SimilarityId { get; set; }
+        public long Result_ResultId { get; set; }
+        public int Result_PathId { get; set; }
+        public long Result_SimilarityId { get; set; }
         public string PathNode_First_FileName { get; set; }
-        public string PathNode_First_Line { get; set; }
-        public string PathNode_First_Column { get; set; }
-        public string PathNode_First_NodeId { get; set; }
+        public int PathNode_First_Line { get; set; }
+        public int PathNode_First_Column { get; set; }
+        public long PathNode_First_NodeId { get; set; }
         public string PathNode_First_Name { get; set; }
         public string PathNode_First_Type { get; set; }
-        public string PathNode_First_Length { get; set; }
+        public int PathNode_First_Length { get; set; }
         public string PathNode_First_Snippet_Line_Number { get; set; }
         public string PathNode_First_Snippet_Line_Code { get; set; }
         public string PathNode_Last_FileName { get; set; }
-        public string PathNode_Last_Line { get; set; }
-        public string PathNode_Last_Column { get; set; }
-        public string PathNode_Last_NodeId { get; set; }
+        public int PathNode_Last_Line { get; set; }
+        public int PathNode_Last_Column { get; set; }
+        public int PathNode_Last_NodeId { get; set; }
         public string PathNode_Last_Name { get; set; }
         public string PathNode_Last_Type { get; set; }
-        public string PathNode_Last_Length { get; set; }
+        public int PathNode_Last_Length { get; set; }
         public string PathNode_Last_Snippet_Line_Number { get; set; }
         public string PathNode_Last_Snippet_Line_Code { get; set; }
     }
