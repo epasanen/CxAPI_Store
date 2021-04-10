@@ -72,6 +72,9 @@ namespace CxAPI_Store
         public string query_filter { get; set; }
         public int result_timeout { get; set; }
         public int max_length { get; set; }
+        public bool initialize { get; set; }
+        public bool autosave { get; set; }
+        public string sqlite_connection {get; set;}
 
 
         List<ProjectObject> projectClass { get; set; }
@@ -89,6 +92,8 @@ namespace CxAPI_Store
             purge_projects = false;
             dump_operation = "none";
             severity_filter = "High,Medium,Low,Info";
+            initialize = false;
+            autosave = false;
         }
 
         public void _setresultClass()
@@ -137,6 +142,7 @@ namespace CxAPI_Store
         public string CxTemplatesPath { get; set; }
         public string CxTemplateFile { get; set; }
         public string CxBackupFilePath { get; set; }
+        public string CxSQLite { get; set; }
         public string grant_type { get; set; }
         public string scope { get; set; }
         public string client_id { get; set; }

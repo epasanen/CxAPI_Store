@@ -18,7 +18,7 @@ namespace CxAPI_Store.dto
         public long PathId { get; set; }
         public long ProjectId { get; set; }
         public string ProjectName { get; set; }
-        public object QueryCategories { get; set; }
+        public string QueryCategories { get; set; }
         public long QueryCweId { get; set; }
         public string QueryGroup { get; set; }
         public long QueryId { get; set; }
@@ -30,7 +30,7 @@ namespace CxAPI_Store.dto
         public string ResultDeepLink { get; set; }
         public long ResultId { get; set; }
         public string ResultSeverity { get; set; }
-        public DateTimeOffset ScanFinished { get; set; }
+        public DateTime ScanFinished { get; set; }
         public long ScanId { get; set; }
         public string ScanProduct { get; set; }
         public string ScanType { get; set; }
@@ -41,7 +41,7 @@ namespace CxAPI_Store.dto
         public int State { get; set; }
         public string Status { get; set; }
         public string TeamName { get; set; }
-        public string VulnerabilityId { get; set; }
+        public long VulnerabilityId { get; set; }
     }
 
 }

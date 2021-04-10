@@ -134,6 +134,7 @@ Scan_ScanComments : CxXMLResults.@ScanComments
 Scan_ScanType : CxXMLResults.@ScanType
 Scan_SourceOrigin : CxXMLResults.@SourceOrigin
 Scan_Visibility : CxXMLResults.@Visibility
+Query_Count : Query_Count
 Query_id : CxXMLResults.Query.~qq.@id
 Query_categories : CxXMLResults.Query.~qq.@categories
 Query_cweId : CxXMLResults.Query.~qq.@cweId
@@ -146,6 +147,7 @@ Query_LanguageChangeDate : CxXMLResults.Query.~qq.@LanguageChangeDate
 Query_SeverityIndex : CxXMLResults.Query.~qq.@SeverityIndex
 Query_QueryPath : CxXMLResults.Query.~qq.@QueryPath
 Query_QueryVersionCode : CxXMLResults.Query.~qq.@QueryVersionCode
+Result_Count : Result_Count
 Result_NodeId : CxXMLResults.Query.~qq.Result.~rr.@NodeId
 Result_FileName : CxXMLResults.Query.~qq.Result.~rr.@FileName
 Result_Status : CxXMLResults.Query.~qq.Result.~rr.@Status

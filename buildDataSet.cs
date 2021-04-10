@@ -30,6 +30,7 @@ namespace CxAPI_Store
         public DataStore dataStore;
         public Dictionary<string, string> masterTemplate;
         public Dictionary<string, string> customKeys;
+        public Dictionary<string, object> projectCommon;
         bool isdelete = false;
 
 
@@ -46,12 +47,14 @@ namespace CxAPI_Store
         {
             int projectScore = 0;
             Dictionary<string, object> projects = new Dictionary<string, object>();
+            projectCommon = new Dictionary<string, object>();
+
             if (!lastCustomFile.Contains(customFile))
             {
                 customKeys = loadDictionary(customFile, false);
             }
             projectScore = getNodes("Project_", dict, projects, 0, 0, 0);
-            dataStore.copyAndPurge("projects",projects);
+            dataStore.copyAndPurge("projects", projectCommon, projects);
          
             return projects;
         }
@@ -69,30 +72,28 @@ namespace CxAPI_Store
             scanScore = getNodes("Scan_", dict, scan, queryCount, 0, 0);
             summaryScore = getNodes("Summary_", dict, summary, queryCount, 0, 0);
 
-            dataStore.copyAndPurge("scans", scan);
-            dataStore.copyAndPurge("summaries", summary);
+            dataStore.copyAndPurge("scans", projectCommon, scan);
+            dataStore.copyAndPurge("summaries", projectCommon, summary);
 
 
             for (queryCount = 0; queryCount < maxQueries; queryCount++)
             {
                 Dictionary<string, object> query = new Dictionary<string, object>();
                 queryScore = getNodes("Query_", dict, query, queryCount, 0, 0);
-                if (queryScore > 0) dataStore.copyAndPurge("queries", query); else break;
+                if (queryScore > 0) dataStore.copyAndPurge("queries", projectCommon, query); else break;
 
                 for (resultCount = 0; resultCount < maxResults; resultCount++)
                 {
                     Dictionary<string, object> results = new Dictionary<string, object>();
                     resultScore = getNodes("Result_", dict, results, queryCount, resultCount, 0);
-                    if (resultScore > 0) dataStore.copyAndPurge("results", results); else break;
+                    if (resultScore > 0) dataStore.copyAndPurge("results", projectCommon, results); else break;
  
                     for (pathNodeCount = 0; pathNodeCount < maxPathNodes; pathNodeCount++)
-                    {
+                    {             
                         Dictionary<string, object> nodes = new Dictionary<string, object>();
-
                         pathNodeFirstScore = getNodes("PathNode_First_", dict, nodes, queryCount, resultCount, pathNodeCount);
                         pathNodeLastScore = getandMapLastNode("PathNode_Last_", dict, nodes, queryCount, resultCount);
-                        if (queryScore > 0) dataStore.copyAndPurge("nodes", nodes); else break;
-
+                        if (pathNodeFirstScore > 0) dataStore.copyAndPurge("nodes", projectCommon, nodes); else break;
                     }
                 }
             }
@@ -209,10 +210,11 @@ namespace CxAPI_Store
             }
             if (count > 0)
             {
-                getKeys("CxKeys", dict, results, queryCount, resultCount);
+               getKeys("CxKeys", dict, results, queryCount, resultCount);
             }
             return count;
         }
+ 
         private int getKeys(string partial, Dictionary<string, object> dict, Dictionary<string, object> results, int queryCount, int resultCount)
         {
             int count = 0;
@@ -225,27 +227,50 @@ namespace CxAPI_Store
                     string realKey = masterTemplate[kvp.Value];
                     realKey = realKey.Replace("~qq", queryCount.ToString());
                     realKey = realKey.Replace("~rr", resultCount.ToString());
-                    if (dict.ContainsKey(realKey.Trim()))
-                    {
-                        if (!results.ContainsKey(kvp.Key))
-                        {
-                            results.Add(kvp.Key, dict[realKey.Trim()]);
-                            count++;
-                        }
-                        else
-                        {
-                            var val = dict[realKey.Trim()].ToString();
-                            if (!String.IsNullOrEmpty(val))             
-                            {
-                                results[kvp.Key] =  dict[realKey.Trim()];
-                            }
-                        }
-                    }
+                    realKey = realKey.Trim();
+                    if (dict.ContainsKey(realKey)) addKey(dict, kvp, realKey);
+                    else if (realKey.Contains("Query_Count")) addCount(new KeyValuePair<string, int>("Key_Query_Count",queryCount));
+                    else if (realKey.Contains("Result_Count")) addCount(new KeyValuePair<string, int>("Key_Result_Count",resultCount));
                 }
             }
             return count;
         }
-   
+
+        private int addKey(Dictionary<string, object> dict, KeyValuePair<string, string> kvp, string realKey)
+        {
+            int count = 0;
+            if (!projectCommon.ContainsKey(kvp.Key))
+            {
+                projectCommon.Add(kvp.Key, dict[realKey]);
+                count++;
+            }
+            else
+            {
+                var val = dict[realKey.Trim()].ToString();
+                if (!String.IsNullOrEmpty(val))
+                {
+                    projectCommon[kvp.Key] = dict[realKey.Trim()];
+                }
+            }
+            return count;
+        }
+        private int addCount(KeyValuePair<string, int> kvp)
+        {
+            int count = 0;
+            if (!projectCommon.ContainsKey(kvp.Key))
+            {
+                projectCommon.Add(kvp.Key, kvp.Value);
+                count++;
+            }
+            else
+            {
+                {
+                    projectCommon[kvp.Key] = kvp.Value;
+                }
+            }
+            return count;
+        }
+
         private bool findAndMapPattern(KeyValuePair<string, string> customFile, Dictionary<string, object> dict, Dictionary<string, object> results, int queryCount, int resultCount, int pathNodeCount)
         {
             // get the real key from the mastermap file
@@ -264,11 +289,11 @@ namespace CxAPI_Store
                 }
                 else
                 {
-                    //var match = Regex.Match(realKey.Trim(), @"(Query\.\d|Query\.\d\.Result\.\d|Query\.\d\.Result\.\d\.Path\.PathNode\.\d)");
-                    //if (match.Success)
-                    //{
-                    //    return false;
-                    //}
+                    var match = Regex.Match(realKey.Trim(), @"(Query\.\d\.Result\.\d|Query\.\d\.Result\.\d\.Path\.PathNode\.\d)");
+                    if (match.Success)
+                    {
+                        return false;
+                    }
                     if (!results.ContainsKey(customFile.Key))
                     {
                         results.Add(customFile.Key, null);

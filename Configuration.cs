@@ -160,6 +160,10 @@ namespace CxAPI_Store
                   v => token.api_action = api_action.archivetoFiles },
                 { "fdb|Files_to_DB", "Store into DataSet, filtered by time and project",
                   v => token.api_action = api_action.buildDataSet },
+                { "init|initialize", "Initialize DataSet before storing data",
+                  v => token.initialize = true  },
+                { "auto|autosave", "Save DataSet after each project loaded.",
+                  v => token.autosave = true  },
                 { "pn|project_name=", "Filter with project name, Will return project if any portion of the project name is a match",
                   v => token.project_name = v },
                 { "tn|team_name=", "Filter with team name, Will return a team if any portion of the team name is a match",
@@ -172,10 +176,6 @@ namespace CxAPI_Store
                   v => token.file_path = v },
                 { "file|file_name=", "Override file name in configuration",
                   v => token.file_name = v },               
-                { "dp|dump_path=", "Dump path for diagnostic testing",
-                  v => token.dump_path = v },
-                { "df|dump_file=", "Dump file name",
-                  v => token.dump_file = v },
                 { "do|dump_operation=", "Dump type and options",
                   v => token.dump_operation = v },
                 { "sf|severity_filter=", "Filter results by Severity",
@@ -280,6 +280,7 @@ namespace CxAPI_Store
             token.end_time = (token.end_time == null) ? DateTime.Today : token.end_time;
             token.start_time = (token.start_time == null) ? DateTime.Today.AddMonths(-1) : token.start_time;
             token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
+            token.sqlite_connection = String.IsNullOrEmpty(token.sqlite_connection) ? _settings.CxSQLite : token.sqlite_connection;
             token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
             token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
             token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file;

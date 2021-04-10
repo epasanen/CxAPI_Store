@@ -7,12 +7,12 @@ namespace CxAPI_Store.dto
     public partial class CxProjectJson
     {
         public Dictionary<string, object> CustomFields { get; set; }
-        public Dictionary<string, object> Policies { get; set; }
+        public string Policies { get; set; }
         public string Preset { get; set; }
         public long ProjectId { get; set; }
         public string ProjectName { get; set; }
-        public DateTime SastLastScanDate { get; set; }
-        public int SastScans { get; set; }
+        public DateTime SAST_LastScanDate { get; set; }
+        public long SAST_Scans { get; set; }
         public string TeamName { get; set; }
 
         public CxProject convertObject()
@@ -20,14 +20,13 @@ namespace CxAPI_Store.dto
             CxProject cx = new CxProject()
             {
                 TeamName = this.TeamName,
-                SastScans = this.SastScans,
-                SastLastScanDate = this.SastLastScanDate,
+                SAST_Scans = this.SAST_Scans,
+                SAST_LastScanDate = this.SAST_LastScanDate,
                 ProjectName = this.ProjectName,
                 ProjectId = this.ProjectId,
                 Preset = this.Preset,
                 CustomFields = flattenDictionary(this.CustomFields),
-                Policies = flattenDictionary(this.Policies)
-
+                Policies = this.Policies
             };
             return cx;
         }
@@ -36,10 +35,12 @@ namespace CxAPI_Store.dto
             string result = String.Empty;
             if (dict != null)
             {
+                result = "{[";
                 foreach (string key in dict.Keys)
                 {
                     result += String.Format("{{{0}:{1}}}", key, dict[key]);
                 }
+                result += "]}";
             }
             return result;
         }
@@ -52,8 +53,8 @@ namespace CxAPI_Store.dto
         public string Preset { get; set; }
         public long ProjectId { get; set; }
         public string ProjectName { get; set; }
-        public DateTime SastLastScanDate { get; set; }
-        public int SastScans { get; set; }
+        public DateTime SAST_LastScanDate { get; set; }
+        public long SAST_Scans { get; set; }
         public string TeamName { get; set; }
 
     }

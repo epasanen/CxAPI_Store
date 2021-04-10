@@ -75,7 +75,7 @@ namespace CxAPI_Store
                     {
                         using (fetchAnalytix fetch = new fetchAnalytix(token))
                         {
-                            fetch.loadDataSet();
+                            fetch.loadDataSet(token.initialize);
                         }
                         break;
                     }

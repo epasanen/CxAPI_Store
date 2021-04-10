@@ -135,6 +135,7 @@ Scan_ScanComments:Scan_ScanComments
 Scan_ScanType:Scan_ScanType
 Scan_SourceOrigin:Scan_SourceOrigin
 Scan_Visibility:Scan_Visibility
+Query_Count:Query_Count
 Query_id:Query_id
 Query_categories:Query_categories
 Query_cweId:Query_cweId
@@ -147,6 +148,7 @@ Query_LanguageChangeDate:Query_LanguageChangeDate
 Query_SeverityIndex:Query_SeverityIndex
 Query_QueryPath:Query_QueryPath
 Query_QueryVersionCode:Query_QueryVersionCode
+Result_Count:Result_Count
 Result_NodeId:Result_NodeId
 Result_FileName:Result_FileName
 Result_Status:Result_Status

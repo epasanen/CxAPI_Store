@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using CxAPI_Store.dto;
@@ -70,10 +71,12 @@ namespace CxAPI_Store
             table.Columns.Add("Key_Start_Date", typeof(DateTime));
             table.Columns.Add("Key_Finish_Date", typeof(DateTime));
             table.Columns.Add("Key_Scan_Type", typeof(string));
-            table.Columns.Add("Key_End_Date", typeof(DateTime));
             table.Columns.Add("Key_Result_FileName", typeof(String));
             table.Columns.Add("Key_Result_SimilarityId", typeof(Int64));
             table.Columns.Add("Key_Result_ResultId", typeof(Int64));
+            table.Columns.Add("Key_PathNode_NodeId", typeof(Int32));
+            table.Columns.Add("Key_Result_PathId", typeof(Int64));
+            table.Columns.Add("Key_Result_NodeId", typeof(Int64));
             table.Columns.Add("Key_Project_Team_Name", typeof(String));
             table.Columns.Add("Key_Project_Preset_Name", typeof(String));
             table.Columns.Add("Key_Query_Id", typeof(Int64));
@@ -82,8 +85,9 @@ namespace CxAPI_Store
             table.Columns.Add("Key_Query_Language", typeof(String));
             table.Columns.Add("Key_Result_FalsePositive", typeof(String));
             table.Columns.Add("Key_Result_DetectionDate", typeof(String));
-            
-
+            table.Columns.Add("Key_Query_Count", typeof(Int64));
+            table.Columns.Add("Key_Result_Count", typeof(Int64));
+     
             PropertyInfo[] properties = mapObject.GetType().GetProperties();
             foreach (PropertyInfo property in properties)
             {
@@ -98,8 +102,10 @@ namespace CxAPI_Store
             }
             return true;
         }
-        public Dictionary<string, object> copyAndPurge(string select, Dictionary<string, object> dict)
+        public Dictionary<string, object> copyAndPurge(string select, Dictionary<string,object> projectCommon, Dictionary<string, object> keyValues)
         {
+            var dict = keyValues.Concat(projectCommon.Where(kvp => !keyValues.ContainsKey(kvp.Key))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
             DataTable table = dataSet.Tables[select];
             var newrow = table.NewRow();
             foreach (string key in dict.Keys)
@@ -124,9 +130,29 @@ namespace CxAPI_Store
                     }
                 }
             }
-            table.Rows.Add(newrow);
+            table.Rows.Add(testfornulls(newrow));
 
             return new Dictionary<string, object>();
+        }
+        private DataRow testfornulls(DataRow dr)
+        {
+            DataTable dt = dr.Table;
+            for (int i=0; i < dr.ItemArray.Length;i++)
+            {
+                if (_token.debug && _token.verbosity > 2) Console.WriteLine("Table {0}, Column {1}, Type {2}, Data {3}, DataType {4}", dt.TableName, dt.Columns[i].ColumnName, dt.Columns[i].DataType, dr.ItemArray[i], dr.ItemArray[i].GetType());
+                if (dr.ItemArray[i].GetType() == typeof(DBNull))
+                {
+                    if (_token.debug && _token.verbosity > 2) Console.WriteLine("DBNull -> Table {0}, Column {1}, Type {2}, Data {3}", dt.TableName, dt.Columns[i].ColumnName, dt.Columns[i].DataType, dr.ItemArray[i]);
+                    if (dt.TableName.Contains("results") || dt.TableName.Contains("queries") || dt.TableName.Contains("nodes"))
+                        Console.WriteLine("DBNull -> Table {0}, Column {1}, Type {2}, Data {3}", dt.TableName, dt.Columns[i].ColumnName, dt.Columns[i].DataType, dr.ItemArray[i]);
+                    if (dt.Columns[i].DataType == typeof(String)) dr.ItemArray[i] = String.Empty;
+                    else if (dt.Columns[i].DataType == typeof(DateTime)) dr.ItemArray[i] = DateTime.MinValue;
+                    else if (dt.Columns[i].DataType == typeof(Int32)) dr.ItemArray[i] = 0;
+                    else dr.ItemArray[i] = 0;
+                }
+            }
+
+            return dr;
         }
 
  

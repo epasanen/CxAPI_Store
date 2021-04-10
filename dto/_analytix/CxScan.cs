@@ -8,8 +8,8 @@ namespace CxAPI_Store.dto
     {
         public string CxVersion { get; set; }
         public string DeepLink { get; set; }
-        public DateTimeOffset EngineFinished { get; set; }
-        public DateTimeOffset EngineStart { get; set; }
+        public DateTime EngineFinished { get; set; }
+        public DateTime EngineStart { get; set; }
         public int FailedLinesOfCode { get; set; }
         public int FileCount { get; set; }
         public long Information { get; set; }
@@ -23,10 +23,10 @@ namespace CxAPI_Store.dto
         public string Preset { get; set; }
         public long ProjectId { get; set; }
         public string ProjectName { get; set; }
-        public DateTimeOffset ReportCreationTime { get; set; }
+        public DateTime ReportCreationTime { get; set; }
         public string ScanComments { get; set; }
-        public DateTimeOffset ScanStarted{ get; set; }
-        public DateTimeOffset ScanFinished { get; set; }
+        public DateTime ScanStarted{ get; set; }
+        public DateTime ScanFinished { get; set; }
         public long ScanId { get; set; }
         public string ScanProduct { get; set; }
         public long ScanRisk { get; set; }
