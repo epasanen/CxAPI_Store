@@ -42,6 +42,25 @@ namespace CxAPI_Store.dto
         public string Status { get; set; }
         public string TeamName { get; set; }
         public long VulnerabilityId { get; set; }
+        //public DateTime DetectionDate { get; set; }
+        public long FileNameHash { get; set; }
+
+        public void GenerateFileHash()
+        {
+            //Int64 hashCode = 0;
+            if (!string.IsNullOrEmpty(NodeFileName))
+            {
+                //Unicode Encode Covering all characterset
+                byte[] byteContents = Encoding.Unicode.GetBytes(NodeFileName);
+                System.Security.Cryptography.SHA256 hash =
+                new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                byte[] hashText = hash.ComputeHash(byteContents);
+                Int64 hashCodeStart = BitConverter.ToInt64(hashText, 0);
+                Int64 hashCodeMedium = BitConverter.ToInt64(hashText, 8);
+                Int64 hashCodeEnd = BitConverter.ToInt64(hashText, 24);
+                FileNameHash = hashCodeStart ^ hashCodeMedium ^ hashCodeEnd;
+            }
+        }
     }
 
 }

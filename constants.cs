@@ -18,6 +18,13 @@
         public const string CxPresets = "/cxrestapi/sast/presets";
         public const string CxScanStatistics = "/cxrestapi/sast/scans/{0}/resultsStatistics";
         public const string CxODATAScan = "/Cxwebinterface/odata/v1/Scans({0})";
+        public const string ProjectTable = "Projects";
+        public const string ScanTable = "Scans";
+        public const string ResultTable = "Results";
+        public const string FirstResult = "FirstResult";
+        public const string LastResult = "LastResult";
+        public const string MetaTable = "MetaData";
+        public const string TestDB = "CxStore.s3db";
     }
     static class _options
     {

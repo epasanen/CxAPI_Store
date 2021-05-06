@@ -27,24 +27,18 @@ namespace CxAPI_Store
     {
         public int status { get; set; }
         public string statusMessage { get; set; }
-        public string request { get; set; }
         public api_action api_action { get; set; }
         public string file_path { get; set; }
         public string file_name { get; set; }
-        public string save_result_path { get; set; }
-        public string save_result_filename { get; set; }
         public string archival_path { get; set; }
-        public string save_result { get; set; }
         public string op_result { get; set; }
         public byte[] byte_result { get; set; }
         public string appsettings { get; set; }
         public DateTime? start_time { get; set; }
         public DateTime? end_time { get; set; }
-        public string session_id { get; set; }
         public string project_name { get; set; }
         public string team_name { get; set; }
         public string preset { get; set; }
-        public bool pipe { get; set; }
         public string os_path { get; set; }
         public bool debug { get; set; }
         public bool test { get; set; }
@@ -64,6 +58,7 @@ namespace CxAPI_Store
         public bool purge_projects { get; set; }
         public string backup_path { get; set; }
         public string template_path { get; set; }
+        public string exe_path { get; set; }
         public string template_file { get; set; }
         public string dump_path { get; set; }
         public string dump_file { get; set; }
@@ -75,9 +70,13 @@ namespace CxAPI_Store
         public bool initialize { get; set; }
         public bool autosave { get; set; }
         public string sqlite_connection {get; set;}
-
-
-        List<ProjectObject> projectClass { get; set; }
+        public string tenant { get; set; }
+        public string exe_directory { get; set; }
+        public int max_write { get; set; }
+        public bool db_allow_write { get; set; }
+        public bool canned { get; set; }
+        public string output_type { get; set; }
+        public bool stop { get; set; }
 
         public resultClass()
         {
@@ -94,6 +93,10 @@ namespace CxAPI_Store
             severity_filter = "High,Medium,Low,Info";
             initialize = false;
             autosave = false;
+            max_write = 0;
+            canned = false;
+            stop = false;
+
         }
 
         public void _setresultClass()
@@ -139,10 +142,12 @@ namespace CxAPI_Store
         public string CxDataFilePath { get; set; }
         public string CxDataFileName { get; set; }
         public string CxArchivalFilePath { get; set; }
+        public string CxTenant { get; set; }
         public string CxTemplatesPath { get; set; }
         public string CxTemplateFile { get; set; }
         public string CxBackupFilePath { get; set; }
         public string CxSQLite { get; set; }
+        public bool CxSQLiteAllowWrite { get; set; }
         public string grant_type { get; set; }
         public string scope { get; set; }
         public string client_id { get; set; }

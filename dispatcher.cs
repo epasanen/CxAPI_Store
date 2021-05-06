@@ -41,9 +41,9 @@ namespace CxAPI_Store
                     }
                 case api_action.generateReports:
                     {
-                        using (restReportDetails restReportDetail = new restReportDetails(token))
+                        using (MakeReports reports = new MakeReports(token))
                         {
-                            restReportDetail.fetchReport();
+                            reports.runReports();
                         }
                         break;
                     }
@@ -57,29 +57,29 @@ namespace CxAPI_Store
 
                         break;
                     }
-                case api_action.archiveFilesandDataSet:
-                    {
-                        token = newtoken.get_token(secure.decrypt_Credentials());
-                        using (restStoreResults restStoreResult = new restStoreResults(token))
-                        {
-                            restStoreResult.fetchResultsAndStore();
-                        }
-                        using (fetchAnalytix fetch = new fetchAnalytix(token))
-                        {
-                            fetch.loadDataSet();
-                        }
-
-                        break;
-                    }
                 case api_action.buildDataSet:
                     {
-                        using (fetchAnalytix fetch = new fetchAnalytix(token))
+                        using (UpdateData fetch = new UpdateData(token))
                         {
                             fetch.loadDataSet(token.initialize);
                         }
                         break;
                     }
- 
+                case api_action.tools:
+                    {
+                        runMenu.startMenu(token);
+                        break;
+                    }
+
+                case api_action.add_indexes:
+                    {
+                        using (SQLiteMaster liteMaster = new SQLiteMaster(token))
+                        {
+                            liteMaster.AddDefaultIndexes();
+                        }
+                        break;
+                    }
+
                 default:
                     {
                         Console.WriteLine("Cannot find valid report name or operation {0}-{1}", token.api_action, token.report_name);

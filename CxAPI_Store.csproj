@@ -10,9 +10,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bin\Debug\netcoreapp3.1\templates\**" />
+    <EmbeddedResource Remove="bin\Debug\netcoreapp3.1\templates\**" />
+    <EntityDeploy Remove="bin\Debug\netcoreapp3.1\templates\**" />
+    <None Remove="bin\Debug\netcoreapp3.1\templates\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="buildResults.cs" />
     <Compile Remove="libraryClass.cs" />
     <Compile Remove="Queryable.cs" />
+    <Compile Remove="restReportDetails.cs" />
     <Compile Remove="SimpleExporter.cs" />
     <Compile Remove="testPdfReport.cs" />
   </ItemGroup>
@@ -38,6 +46,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="canned\GraphicSummary.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="canned\SummaryAndAgingReport.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sqlite-tools\sqldiff.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sqlite-tools\sqlite3.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sqlite-tools\sqlite3_analyzer.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="templates\basicTemplate.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -57,10 +80,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="bin\Debug\netcoreapp3.1\templates\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\razorlite\RazorLight\src\RazorLight\RazorLight.csproj" />
   </ItemGroup>
 
@@ -74,6 +93,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Transform.json</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="bin\Debug\netcoreapp3.1\" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Linq;
+using CxAPI_Store.dto;
 
 namespace CxAPI_Store
 {
@@ -91,7 +93,427 @@ namespace CxAPI_Store
             return myrisk;
 
         }
+
     }
+    public class GetResultCounts
+    {
+        private SQLiteMaster sqlite;
+        public long ProjectID;
+        public long ScanID;
+        public DateTime ScanFinished;
+        public Dictionary<string, int> State;
+        public Dictionary<string, int> Severity;
+
+
+        public GetResultCounts(SQLiteMaster sqlite)
+        {
+            this.sqlite = sqlite;
+            this.State = new Dictionary<string, int>() { { "To Verify", 0 }, { "Not Exploitable", 0 }, { "Confirmed", 0 }, { "Urgent", 0 }, { "Proposed Not Exploitable", 0 } };
+            this.Severity = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+        }
+        public GetResultCounts(SQLiteMaster sqlite, List<string> labels)
+        {
+            this.State = new Dictionary<string, int>();
+            this.sqlite = sqlite;
+            this.Severity = new Dictionary<string, int>() { { "High", 0 }, { "Medium", 0 }, { "Low", 0 }, { "Info", 0 } };
+            foreach (string s in labels)
+            {
+                State.Add(s, 0);
+            }
+        }
+        public object GetCorrectCounts(long projectId, long ScanId)
+        {
+            string sql = String.Format("Select Distinct  SimilarityId, ResultId, PathId, State, ResultSeverity from Results where ProjectId = {0} and ScanId = {1} and FalsePositive != 'True'", projectId, ScanId);
+            DataTable table = sqlite.SelectIntoDataTable("CorrectCount", sql);
+            Severity["High"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "High").Count();
+            Severity["Medium"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "Medium").Count();
+            Severity["Low"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "Low").Count();
+            Severity["Info"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "Info").Count();
+            List<string> Loop = State.Keys.ToList();
+            long stateCount = 0;
+            foreach (string Key in Loop)
+            {
+                State[Key] = table.AsEnumerable().Where(w => w.Field<long>("State") == stateCount++).Count();
+            }
+            return this;
+        }
+        public object GetCorrectCounts(long projectId, string query)
+        {
+            DataTable table = sqlite.SelectIntoDataTable("ScanCount", String.Format("Select ScanId from Scans where ProjectId = {0} and {1} order by ScanId Desc", projectId, query));
+            var scan = table.AsEnumerable().Select(row => new { ScanId = row.Field<long>("ScanId") }).FirstOrDefault();
+            if (scan != null)
+                return GetCorrectCounts(projectId, scan.ScanId);
+            return this;
+        }
+    }
+    public class ScanHistory
+    {
+        public string Reviewer { get; set; }
+        public DateTime ChangeDate { get; set; }
+        public string Event { get; set; }
+
+        public ScanHistory(string reviewer, string events, string changeDate)
+        {
+            this.Reviewer = reviewer;
+            this.ChangeDate = DateTime.Parse(changeDate);
+            this.Event = events;
+        }
+
+    }
+    public class Vulnerability
+    {
+        public string VulnerabilityStatus { get; set; }
+        public Dictionary<int, ScanHistory> history { get; set; }
+        public bool isFalsePositive { get; set; }
+
+        public DateTime agingDate { get; set; }
+        public bool Open { get; set; }
+        public DateTime StatusChanged { get; set; }
+        public string Reviewer { get; set; }
+        public DateTime ChangeDate { get; set; }
+        public string ChangeEvent { get; set; }
+        public long ProjectId { get; set; }
+        public long SimilarityId { get; set; }
+        public string ProjectName { get; set; }
+        public long ScanId { get; set; }
+        public long PathId { get; set; }
+        public long VulnerabilityId { get; set; }
+        public string Remark { get; set; }
+        public string Severity { get; set; }
+        public int Age { get; set; }
+        public string DeepLink { get; set; }
+        public long NodeLine { get; set; }
+        public long NodeColumn { get; set; }
+        public string NodeFileName { get; set; }
+        public int ScanCount { get; set; }
+        public string NodeCodeSnippet { get; set; }
+        public long State { get; set; }
+        public string QueryName { get; set; }
+        public string QueryLanguage { get; set; }
+        public DateTime firstScan { get; set; }
+        public DateTime lastScan { get; set; }
+
+
+
+
+        public Vulnerability(CxOptions options, string firstScan, string lastScan, int count, string Status, DateTime now, bool fp = false, bool open = true)
+        {
+            this.VulnerabilityStatus = Status;
+            this.StatusChanged = DateTime.Parse(options.ScanFinished);
+            this.firstScan = DateTime.Parse(firstScan);
+            this.lastScan = DateTime.Parse(lastScan);
+            this.ScanCount = count;
+            this.ProjectId = options.ProjectId;
+            this.ProjectName = options.ProjectName;
+            this.PathId = options.PathId;
+            this.ScanId = options.ScanId;
+            this.VulnerabilityId = options.VulnerabilityId;
+            this.NodeCodeSnippet = options.NodeCodeSnippet;
+            this.NodeColumn = options.NodeColumn;
+            this.NodeLine = options.NodeLine;
+            this.State = options.State;
+            this.QueryName = options.QueryName;
+            this.QueryLanguage = options.QueryLanguage;
+            this.SimilarityId = options.SimilarityId;
+            this.Severity = options.Severity;
+            this.NodeFileName = options.NodeFileName;
+            this.DeepLink = options.DeepLink;
+
+            this.isFalsePositive = fp;
+            this.Open = open;
+            if (fp)
+            {
+                this.VulnerabilityStatus = "Closed";
+                this.Age = (now.Date - DateTime.Parse(lastScan)).Days;
+                this.Open = false;
+                this.agingDate = DateTime.Parse(lastScan);
+            }
+            else if (Status.Contains("Fixed"))
+            {
+                this.Age = (now.Date - DateTime.Parse(lastScan)).Days;
+                this.Open = false;
+                this.agingDate = DateTime.Parse(lastScan);
+            }
+            else if (Status.Contains("Recurring"))
+            {
+                this.Age = (now.Date - DateTime.Parse(firstScan)).Days;
+                this.Open = true;
+                this.agingDate = DateTime.Parse(firstScan);
+            }
+            else if (Status.Contains("New"))
+            {
+                this.Age = (now.Date - DateTime.Parse(firstScan)).Days;
+                this.Open = true;
+                this.agingDate = DateTime.Parse(firstScan);
+            }
+
+        }
+
+        public void VulnerabilityRemark(string remark, string reviewer, string change, string changeDate)
+        {
+            this.ChangeDate = DateTime.Parse(changeDate);
+            this.Reviewer = reviewer;
+            this.ChangeEvent = change;
+            this.Remark = remark;
+        }
+
+    }
+    public class CxOptions
+    {
+        public string Key { get; set; }
+        public long SimilarityId { get; set; }
+        public long FileNameHash { get; set; }
+        public string ScanFinished { get; set; }
+        public string FalsePositive { get; set; }
+        public string ProjectName { get; set; }
+        public long ProjectId { get; set; }
+        public long PathId { get; set; }
+        public long ScanId { get; set; }
+        public long VulnerabilityId { get; set; }
+        public string Severity { get; set; }
+        public string Remark { get; set; }
+        public string DeepLink { get; set; }
+        public long NodeLine { get; set; }
+        public long NodeColumn { get; set; }
+        public string NodeFileName { get; set; }
+        public string NodeCodeSnippet { get; set; }
+        public long State { get; set; }
+        public string QueryName { get; set; }
+        public string QueryLanguage { get; set; }
+
+
+
+
+        public string setKey(long SimilarityId, long FileNameHash)
+        {
+            return String.Format("{0:D10}_{1:D10}", SimilarityId, FileNameHash);
+        }
+
+    }
+
+    public class GetResultAging
+    {
+        private SQLiteMaster sqlite;
+        private DateTime now;
+        private resultClass token;
+        public SortedDictionary<string, Vulnerability> vulnerability;
+
+        public GetResultAging(SQLiteMaster sqlite, resultClass token)
+        {
+            this.sqlite = sqlite;
+            this.now = DateTime.UtcNow;
+            this.token = token;
+            this.vulnerability = new SortedDictionary<string, Vulnerability>();
+        }
+
+        public Vulnerability VulnerabilityExists(long SimilarityId, long FileNameHash)
+        {
+            string Key = String.Format("{0:D10}_{1:D10}", SimilarityId, FileNameHash);
+            if (this.vulnerability.ContainsKey(Key))
+                return this.vulnerability[Key];
+
+            return null;
+        }
+
+        public object GetResultAgingbySimilarityId(long ProjectId)
+        {
+            StringBuilder sql = new StringBuilder(String.Format("Select ScanId, ScanFinished from Scans where ProjectId = {0} ", ProjectId));
+            StringBuilder range = new StringBuilder();
+            if (token.start_time != null)
+                range.Append(String.Format("and ScanFinished > datetime('{0:yyyy-MM-ddThh:mm:ss}') ", token.start_time));
+            if (token.end_time != null)
+                range.Append(String.Format("and ScanFinished < datetime('{0:yyyy-MM-ddThh:mm:ss}') ", token.end_time));
+
+            var firstscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished {2} limit 1", sql.ToString(), range.ToString(), "ASC")).AsEnumerable()
+                .Select(row => new
+                {
+                    ScanId = row.Field<long>("ScanId"),
+                    ScanFinished = row.Field<string>("ScanFinished")
+                })
+                .FirstOrDefault();
+
+            var lastscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished {2} limit 1", sql.ToString(), range.ToString(), "DESC")).AsEnumerable()
+                .Select(row => new
+                {
+                    ScanId = row.Field<long>("ScanId"),
+                    ScanFinished = row.Field<string>("ScanFinished")
+                })
+                .FirstOrDefault();
+
+            sql.Clear();
+
+            sql.Append(String.Format("Select * from Results where ProjectId = {0}", ProjectId));
+
+            var first = sqlite.SelectIntoDataTable("FirstResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), firstscan.ScanId)).AsEnumerable()
+                .Select(row => new CxOptions
+                {
+                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                    SimilarityId = row.Field<long>("SimilarityId"),
+                    FileNameHash = row.Field<long>("FileNameHash"),
+                    ScanFinished = row.Field<string>("ScanFinished"),
+                    FalsePositive = row.Field<string>("FalsePositive"),
+                    Remark = row.Field<string>("Remark"),
+                    ProjectId = row.Field<long>("ProjectId"),
+                    ProjectName = row.Field<string>("ProjectName"),
+                    PathId = row.Field<long>("PathId"),
+                    ScanId = row.Field<long>("ScanId"),
+                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                    Severity = row.Field<string>("ResultSeverity"),
+                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                    NodeColumn = row.Field<long>("NodeColumn"),
+                    NodeFileName = row.Field<string>("NodeFileName"),
+                    NodeLine = row.Field<long>("NodeLine"),
+                    DeepLink = row.Field<string>("ResultDeepLink"),
+                    State = row.Field<long>("State"),
+                    QueryName = row.Field<string>("QueryName"),
+                    QueryLanguage = row.Field<string>("QueryLanguage"),
+
+                })
+                 .ToHashSet();
+
+            var last = sqlite.SelectIntoDataTable("LastResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), lastscan.ScanId)).AsEnumerable()
+                .Select(row => new CxOptions
+                {
+                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                    SimilarityId = row.Field<long>("SimilarityId"),
+                    FileNameHash = row.Field<long>("FileNameHash"),
+                    ScanFinished = row.Field<string>("ScanFinished"),
+                    FalsePositive = row.Field<string>("FalsePositive"),
+                    Remark = row.Field<string>("Remark"),
+                    ProjectId = row.Field<long>("ProjectId"),
+                    ProjectName = row.Field<string>("ProjectName"),
+                    PathId = row.Field<long>("PathId"),
+                    ScanId = row.Field<long>("ScanId"),
+                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                    Severity = row.Field<string>("ResultSeverity"),
+                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                    NodeColumn = row.Field<long>("NodeColumn"),
+                    NodeFileName = row.Field<string>("NodeFileName"),
+                    NodeLine = row.Field<long>("NodeLine"),
+                    DeepLink = row.Field<string>("ResultDeepLink"),
+                    State = row.Field<long>("State"),
+                    QueryName = row.Field<string>("QueryName"),
+                    QueryLanguage = row.Field<string>("QueryLanguage"),
+                })
+                .ToHashSet();
+
+            var firstKeys = new HashSet<long>(first.Select(x => x.SimilarityId));
+            string keys = String.Format(" and SimilarityId in ({0})", String.Join(',', firstKeys.ToArray()));
+
+            var all = sqlite.SelectIntoDataTable("AllResults", String.Format("{0} {1} {2} order by ScanFinished", sql.ToString(), range.ToString(), keys)).AsEnumerable()
+                .Select(row => new CxOptions
+                {
+                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                    SimilarityId = row.Field<long>("SimilarityId"),
+                    FileNameHash = row.Field<long>("FileNameHash"),
+                    ScanFinished = row.Field<string>("ScanFinished"),
+                    FalsePositive = row.Field<string>("FalsePositive"),
+                    Remark = row.Field<string>("Remark"),
+                    ProjectId = row.Field<long>("ProjectId"),
+                    ProjectName = row.Field<string>("ProjectName"),
+                    PathId = row.Field<long>("PathId"),
+                    ScanId = row.Field<long>("ScanId"),
+                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                    Severity = row.Field<string>("ResultSeverity"),
+                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                    NodeColumn = row.Field<long>("NodeColumn"),
+                    NodeFileName = row.Field<string>("NodeFileName"),
+                    NodeLine = row.Field<long>("NodeLine"),
+                    DeepLink = row.Field<string>("ResultDeepLink"),
+                    State = row.Field<long>("State"),
+                    QueryName = row.Field<string>("QueryName"),
+                    QueryLanguage = row.Field<string>("QueryLanguage"),
+                })
+                .ToHashSet();
+
+
+            var recurringKey = new HashSet<string>(first.Select(x => x.Key));
+            var recurringLast = new HashSet<string>(last.Where(x => recurringKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
+            var recurringResult = (last.Where(x => recurringLast.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Recurring") })).ToHashSet();
+            first.RemoveWhere(x => recurringLast.Contains(x.Key));
+            last.RemoveWhere(x => recurringLast.Contains(x.Key));
+
+            var newKey = new HashSet<string>(last.Select(x => x.Key));
+            var allNew = new HashSet<string>(all.Where(x => newKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
+            var allNewResult = all.Where(x => allNew.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "New") }).ToHashSet();
+            last.RemoveWhere(x => allNew.Contains(x.Key));
+            all.RemoveWhere(x => allNew.Contains(x.Key));
+
+            var fixedKey = new HashSet<string>(first.Select(x => x.Key));
+            var fixedAll = new HashSet<string>(all.Where(x => fixedKey.Contains(x.Key)).OrderByDescending(o => o.ScanFinished).Select(x => x.Key).Distinct());
+            var allFixedResult = all.Where(x => fixedAll.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Fixed") }).ToHashSet();
+            last.RemoveWhere(x => fixedAll.Contains(x.Key));
+            all.RemoveWhere(x => fixedAll.Contains(x.Key));
+
+            return this;
+
+        }
+        private Vulnerability SetVulnerability(SortedDictionary<string, Vulnerability> dict, CxOptions select, IEnumerable<CxOptions> options, String status)
+        {
+            Vulnerability v;
+            if (select.ProjectId == 201)
+                Console.WriteLine("{0} - {1} {2} {3} found", select.SimilarityId, select.FileNameHash, select.ProjectId, select.QueryName);
+
+
+            var topScan = options.Where(x => x.Key == select.Key).OrderBy(o => o.ScanFinished).Select(x => new { ScanId = x.ScanId, ScanFinished = x.ScanFinished }).FirstOrDefault();
+            var lastScan = options.Where(x => x.Key == select.Key).OrderBy(o => o.ScanFinished).Select(x => new { ScanId = x.ScanId, ScanFinished = x.ScanFinished }).LastOrDefault();
+            int count = options.Where(x => x.ScanId >= topScan.ScanId && x.ScanId <= lastScan.ScanId).Select(row=> row.ScanId).Distinct().Count();
+
+            if (!dict.ContainsKey(select.Key))
+            {
+                if (select.FalsePositive != "True")
+                {
+                    v = new Vulnerability(select, topScan.ScanFinished, lastScan.ScanFinished, count, status, now, false, true);
+                    dict.Add(select.Key, v);
+                    GetLastChangedRemark(select.Remark, v);
+                }
+                else
+                {
+                    v = new Vulnerability(select, topScan.ScanFinished, lastScan.ScanFinished, count, status, now, true, false);
+                    dict.Add(select.Key, v);
+                    GetLastChangedRemark(select.Remark, v);
+                }
+            }
+            return null;
+        }
+
+
+        private void GetLastChangedRemark(string remark, Vulnerability v)
+        {
+            var splits = remark.Split("\r\n");
+            Dictionary<int, ScanHistory> pairs = new Dictionary<int, ScanHistory>();
+            int count = 0;
+            foreach (string split in splits)
+            {
+                string result = GetPattern(split, "Changed status to");
+                if (!String.IsNullOrEmpty(result))
+                {
+                    var dateSplit = result.Split(", [");
+                    var dateTrim = dateSplit[1].Substring(0, dateSplit[1].LastIndexOf("]:"));
+                    var changeEvent = result.Split("]:")[1];
+                    var reviewer = dateSplit[0];
+                    reviewer = reviewer.Substring(0, reviewer.LastIndexOf(' '));
+                    pairs.Add(count, new ScanHistory(reviewer, changeEvent, dateTrim));
+                    count++;
+                }
+            }
+            v.history = pairs;
+            if (pairs.ContainsKey(0))
+            {
+                ScanHistory history = pairs[0];
+                v.VulnerabilityRemark(remark, history.Reviewer, history.Event, history.ChangeDate.ToString());
+            }
+        }
+
+        private string GetPattern(string s, string pattern)
+        {
+            if (s.Contains(pattern))
+                return s;
+            return String.Empty;
+        }
+    }
+
+
     public class CWEID
     {
         public Dictionary<int[], string> owasp { get; set; }
@@ -121,4 +543,6 @@ namespace CxAPI_Store
             owasp.Add(A10, "A10-Insufficient Logging & Monitoring");
         }
     }
+
 }
+

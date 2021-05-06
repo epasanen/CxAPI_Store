@@ -2,7 +2,7 @@
   "profiles": {
     "CxAPI_Store": {
       "commandName": "Project",
-      "commandLineArgs": "--Files_to_DB --debug --appsettings=c:\\scripts\\appsettings-analytix.json --verbose=1 "
+      "commandLineArgs": "--reports  --debug --verbose=1 --appsettings=c:\\scripts\\appsettings-cxloyalty.json  --canned --tenant=AdHoc --report_name=\"GraphicSummary\" --output_type=\"pdf,html\" --file_name=GraphicSummary.pdf --query_filter=\"CustomFields like '%Cars%'\""
     }
   }
 }

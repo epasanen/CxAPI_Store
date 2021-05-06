@@ -91,12 +91,12 @@ namespace CxAPI_Store
                 ProjectObject projectObject = JsonConvert.DeserializeObject<ProjectObject>(File.ReadAllText(projectJson));
                 ScanSettings scanSettings = JsonConvert.DeserializeObject<ScanSettings>(File.ReadAllText(settingsJson));
                 ProjectDetail projectDetail = JsonConvert.DeserializeObject<ProjectDetail>(File.ReadAllText(projectDetailJson));
-                if (filterProjectSettings(token, projectObject, scanSettings, projectDetail))
-                {
-                    CxProjects.Add(projectObject);
-                    CxSettings.Add(Convert.ToInt64(projectObject.id), scanSettings);
-                    CxProjectDetail.Add(Convert.ToInt64(projectObject.id), projectDetail);
-                }
+//                if (filterProjectSettings(token, projectObject, scanSettings, projectDetail))
+//                {
+                CxProjects.Add(projectObject);
+                CxSettings.Add(Convert.ToInt64(projectObject.id), scanSettings);
+                CxProjectDetail.Add(Convert.ToInt64(projectObject.id), projectDetail);
+ //               }
             }
             return true;
         }
@@ -155,7 +155,7 @@ namespace CxAPI_Store
 
             return true;
         }
-
+/*
         public bool filterProjectSettings(resultClass token, ProjectObject project, ScanSettings settings, ProjectDetail projectDetail)
         {
             return testProject(token, project) && testTeam(token, project) && testPreset(token, project, settings) && testQuery(token,projectDetail);
@@ -171,6 +171,8 @@ namespace CxAPI_Store
             }
             return false;     
         }
+*/
+/*
         public bool testProject(resultClass token, ProjectObject project)
         {
             return String.IsNullOrEmpty(token.project_name) || project.name.Contains(token.project_name);
@@ -222,7 +224,7 @@ namespace CxAPI_Store
             }
             return presetFlag;
         }
-
+*/
         public object getTeamAndPresetNames(string teamKey, long presetKey)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -249,6 +251,7 @@ namespace CxAPI_Store
 
             return true;
         }
+
  
         public void Dispose()
         {

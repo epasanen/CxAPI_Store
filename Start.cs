@@ -20,7 +20,7 @@ namespace CxAPI_Store
                     Console.WriteLine("Successful completion.");
                 }
                 dsp.Elapsed_Time();
-                if (token.test)
+                if (token.stop)
                 {
                     Console.ReadKey();
                 }

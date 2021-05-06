@@ -125,7 +125,6 @@ namespace CxAPI_Store
             {
                 pclass = JsonConvert.DeserializeObject<ProjectDetail>(token.op_result);
             }
-
             return pclass;
         }
 

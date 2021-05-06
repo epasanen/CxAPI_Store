@@ -10,6 +10,7 @@
         generateReports,
         buildDataSet,
         buildTemplates,
+        tools,add_indexes,
         help
     }
 

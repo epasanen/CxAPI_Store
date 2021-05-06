@@ -152,14 +152,18 @@ namespace CxAPI_Store
                   v => token.api_action = api_action.getToken },
                 { "c|store_credentials", "Store username and credential in an encrypted file",
                   v => token.api_action = api_action.storeCredentials },
+                { "tt|tenant=", "Tag DB with tenant name",
+                  v => token.tenant = v },
                 { "r|reports", "Create reports, filtered by project, time and other properties",
                   v => token.api_action = api_action.generateReports },
-                { "afdb|API_Files_to_DB", "Fetch data using API and store in files, and then save in DataSet",
-                  v => token.api_action = api_action.archiveFilesandDataSet },
-                { "af|API_Files", "Fetch data using API and store in files.",
+                { "af|API_Files", "Fetch data using API and store in files (when not using CxAnalytix)",
                   v => token.api_action = api_action.archivetoFiles },
                 { "fdb|Files_to_DB", "Store into DataSet, filtered by time and project",
                   v => token.api_action = api_action.buildDataSet },
+                { "ai|add_indexes", "Add default indexes",
+                  v => token.api_action = api_action.add_indexes },
+                { "tool|tools", "Launch a development tool",
+                  v => token.api_action = api_action.tools },
                 { "init|initialize", "Initialize DataSet before storing data",
                   v => token.initialize = true  },
                 { "auto|autosave", "Save DataSet after each project loaded.",
@@ -170,14 +174,10 @@ namespace CxAPI_Store
                   v => token.team_name = v },
                 { "psn|preset_name=", "Filter with preset name, Will return a preset if any portion of the team name is a match",
                   v => token.preset = v },
-                { "pi|pipe", "Do not write to file but pipe output to stdout. Useful when using other API's",
-                  v => token.pipe = true },
                 { "path|file_path=", "Override file path in configuration",
                   v => token.file_path = v },
                 { "file|file_name=", "Override file name in configuration",
-                  v => token.file_name = v },               
-                { "do|dump_operation=", "Dump type and options",
-                  v => token.dump_operation = v },
+                  v => token.file_name = v },
                 { "sf|severity_filter=", "Filter results by Severity",
                   v => token.severity_filter = v },
                 { "ap|archival_path=", "Override archival path in configuration",
@@ -190,12 +190,18 @@ namespace CxAPI_Store
                   v => token.credential = v },
                 { "st|start_time=", "Last scan start time",
                   v => token.start_time = DateTime.Parse(v)},
+                { "et|end_time=", "Last scan end time",
+                  v => token.end_time = DateTime.Parse(v)},
                 { "tp|template_path=", "Provide path to templates",
                   v => token.template_path = v },
                 { "tf|template_file=", "Provide name of template",
                   v => token.template_file = v },
-                { "et|end_time=", "Last scan end time",
-                  v => token.end_time = DateTime.Parse(v)},
+                { "can|canned", "Use one of the canned reports",
+                  v => token.canned = true },
+                { "rn|report_name=", "Name of canned report object",
+                  v => token.report_name = v },
+                { "of|output_type=", "Output report types",
+                  v => token.output_type = v },
                 //add proxy stuff
                 { "up|use_proxy", "Use web proxy",
                   v => token.use_proxy = true },
@@ -212,23 +218,21 @@ namespace CxAPI_Store
                   v => token.verbosity = Convert.ToInt32(v) },
                 { "mt|max_threads=", "Change the max number of report requests to CxManager",
                   v => token.max_threads = Convert.ToInt32(v) },
-                { "ml|max_length=", "Change the max size of date extracted from XML",
+                { "ml|max_length=", "Change the max size of data extracted from XML",
                   v => token.max_length = Convert.ToInt32(v) },
                 { "ms|max_scans=", "Change the max number of report requests to CxManager",
                   v => token.max_scans = Convert.ToInt32(v) },
-                { "ff|filename_filter=", "Filter results so only filename matches are reported",
-                  v => token.filename_filter = v },
-                { "rs|refresh_settings", "If set, refresh scan setting for projects",
-                  v => token.scan_settings = true},
-                { "ps|purge_projects", "If set, remove projects no longer in CxSAST",
-                  v => token.purge_projects = true},
-                { "qu|query_filter=", "Set to add filter to project extraction",
+                { "dbw|max_write=", "Change the bulk load to DB",
+                  v => token.max_write = Convert.ToInt32(v) },
+                { "qu|query_filter=", "Set to add additional filters to project extraction",
                   v => token.query_filter = v},
                 { "to|result_timeout=", "Set the maximum time to wait for a result to upload.",
                   v => token.result_timeout = Convert.ToInt32(v)},
                 { "d|debug", "Output debugging info ",
                   v => token.debug = true },
-                { "T|test", "Wait at end of program ",
+                { "H|halt", "Exit by entering any key at end of process. ",
+                  v => token.stop = true },
+                { "T|test", "Set up test DB, folders",
                   v => token.test = true },
                 { "?|h|help",  "show your options",
                   v => token.api_action = api_action.help},
@@ -274,19 +278,23 @@ namespace CxAPI_Store
         private static void misc_setup(resultClass token, settingClass _settings)
         {
 
+            token.exe_path = String.Format("{0}", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location));
             token.master_path = String.IsNullOrEmpty(token.template_path) ? String.Format("{0}{1}templates", System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), ospath()) : token.template_path;
             token.file_name = String.IsNullOrEmpty(token.file_name) ? _settings.CxDefaultFileName : token.file_name;
             token.file_path = String.IsNullOrEmpty(token.file_path) ? _settings.CxDefaultFilePath : token.file_path;
             token.end_time = (token.end_time == null) ? DateTime.Today : token.end_time;
-            token.start_time = (token.start_time == null) ? DateTime.Today.AddMonths(-1) : token.start_time;
+            token.start_time = (token.start_time == null) ? DateTime.Today.AddYears(-1) : token.start_time;
             token.archival_path = String.IsNullOrEmpty(token.archival_path) ? _settings.CxArchivalFilePath : token.archival_path;
             token.sqlite_connection = String.IsNullOrEmpty(token.sqlite_connection) ? _settings.CxSQLite : token.sqlite_connection;
             token.backup_path = String.IsNullOrEmpty(token.backup_path) ? _settings.CxBackupFilePath : token.backup_path;
+            token.tenant = String.IsNullOrEmpty(token.tenant) ? _settings.CxTenant : token.tenant;
+            token.tenant = String.IsNullOrEmpty(token.tenant) ? "Default" : token.tenant;
             token.template_path = String.IsNullOrEmpty(token.template_path) ? _settings.CxTemplatesPath : token.template_path;
             token.template_file = String.IsNullOrEmpty(token.template_file) ? _settings.CxTemplateFile : token.template_file;
             token.dump_path = String.IsNullOrEmpty(token.dump_path) ? token.file_path : token.dump_path;
             token.dump_file = String.IsNullOrEmpty(token.dump_file) ? token.file_name : token.dump_file;
-
+            token.exe_directory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            token.db_allow_write = _settings.CxSQLiteAllowWrite;
         }
 
         private static void ShowHelp(OptionSet p)

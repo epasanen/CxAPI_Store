@@ -25,7 +25,7 @@ namespace CxAPI_Store
 
         public bool fetchResultsAndStore()
         {
-            if (Directory.EnumerateFiles(token.archival_path,"sast_project_info.*.log").Any())
+            if (!Directory.EnumerateFiles(token.archival_path,"sast_project_info.*.log").Any())
             {
                 getProjectFiles getProjectFiles = new getProjectFiles(token);
                 getScanResults scanResults = new getScanResults();

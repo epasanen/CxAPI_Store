@@ -99,7 +99,7 @@ namespace CxAPI_Store
             businessName = _token.query_filter;
             var rows = projects.AsEnumerable()
              .Select(r => string.Format("{0}", string.Join(",", r.ItemArray[0])));
-            var output = string.Join(",", rows.ToArray());
+            var scans = string.Join(",", rows.ToArray());
             scans = new DataView(dataSet.Tables["scans"], String.Format("Key_Project_Id IN ({0})", output), "Key_Start_Date DESC", DataViewRowState.CurrentRows).ToTable();
             summaries = new DataView(dataSet.Tables["summaries"], String.Format("Key_Project_Id IN ({0})", output), "Key_Start_Date DESC", DataViewRowState.CurrentRows).ToTable();
             queries = new DataView(dataSet.Tables["queries"], String.Format("Key_Project_Id IN ({0})", output), "Key_Start_Date DESC", DataViewRowState.CurrentRows).ToTable();
