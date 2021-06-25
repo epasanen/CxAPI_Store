@@ -35,12 +35,21 @@ namespace CxAPI_Store.dto
             string result = String.Empty;
             if (dict != null)
             {
-                result = "{[";
+                result = "{";
                 foreach (string key in dict.Keys)
                 {
-                    result += String.Format("{{{0}:{1}}}", key, dict[key]);
+                    Int64 test;
+                    if (Int64.TryParse(dict[key].ToString(), out test))
+                    {
+                        result += String.Format("\"{0}\":{1},", key, dict[key]);
+                    }
+                    else
+                    {
+                        result += String.Format("\"{0}\":\"{1}\",", key, dict[key]);
+                    }
                 }
-                result += "]}";
+                result = result.TrimEnd(',');
+                result += "}";
             }
             return result;
         }

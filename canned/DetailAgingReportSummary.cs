@@ -9,36 +9,28 @@ using System.Dynamic;
 
 namespace CxAPI_Store
 {
-    public partial class AgingOutput
+    public partial class AgingOutputSummary
     {
         public string ProjectName { get; set; }
         public string Team { get; set; }
-        public string PresetName { get; set; }
         public string Query { get; set; }
         public string QueryLanguage { get; set; }
-        public long similarityId { get; set; }
-        public string isFalsePositive { get; set; }
-        public string StateDesc { get; set; }
+        public string State { get; set; }
         public string Status { get; set; }
         public string Severity { get; set; }
-        public int lineNo { get; set; }
-        public int column { get; set; }
-        public string fileName { get; set; }
-        public string deepLink { get; set; }
-        public string remark { get; set; }
         public DateTimeOffset firstScan { get; set; }
         public DateTimeOffset lastScan { get; set; }
         public int age { get; set; }
         public int scanCount { get; set; }
     }
-    public class DetailAgingReport
+    public class DetailAgingReportSummary
     {
 
         private MakeReports makeReports;
         private resultClass token;
         private DataSet dataSet;
         private SQLiteMaster sqlite;
-        public DetailAgingReport(resultClass token, MakeReports makeReports)
+        public DetailAgingReportSummary(resultClass token, MakeReports makeReports)
         {
             this.token = token;
             this.makeReports = makeReports;
@@ -71,30 +63,30 @@ namespace CxAPI_Store
 
                 foreach (string key in getResult.vulnerability.Keys)
                 {
-                    AgingOutput agingOutput = new AgingOutput();
+                    AgingOutputSummary agingOutputSummary = new AgingOutputSummary();
                     Vulnerability vulnerability = getResult.vulnerability[key];
-
-                    agingOutput.ProjectName = pdr.ProjectName;
-                    agingOutput.Team = pdr.TeamName;
-                    agingOutput.PresetName = pdr.Preset;
-                    agingOutput.remark = vulnerability.Remark;
-                    agingOutput.age = vulnerability.Age;
-                    agingOutput.Severity = vulnerability.Severity;
-                    agingOutput.lineNo = (int)vulnerability.NodeLine;
-                    agingOutput.column = (int)vulnerability.NodeColumn;
-                    agingOutput.deepLink = vulnerability.DeepLink;
-                    agingOutput.Status = vulnerability.VulnerabilityStatus;
-                    agingOutput.isFalsePositive = vulnerability.isFalsePositive ? "True" : "False";
-                    agingOutput.fileName = TrimFileName(vulnerability.NodeFileName);
-                    agingOutput.StateDesc = StateDescription((int)vulnerability.State);
-                    agingOutput.Query = vulnerability.QueryName;
-                    agingOutput.QueryLanguage = vulnerability.QueryLanguage;
-                    agingOutput.similarityId = vulnerability.SimilarityId;
-                    agingOutput.firstScan = vulnerability.firstScan;
-                    agingOutput.lastScan = vulnerability.lastScan;
-                    agingOutput.scanCount = vulnerability.ScanCount;
-                    dynoList.Add(agingOutput);
-
+                    if ((token.severity_filter.Contains(vulnerability.Severity)))
+                     {
+                        if ((vulnerability.VulnerabilityStatus.Contains("Closed") || vulnerability.VulnerabilityStatus.Contains("Fixed")))
+                        {
+                            agingOutputSummary.Status = "Closed";
+                        }
+                        else
+                        {
+                            agingOutputSummary.Status = "Open";
+                        }
+                        agingOutputSummary.ProjectName = pdr.ProjectName;
+                        agingOutputSummary.Team = pdr.TeamName;
+                        agingOutputSummary.age = agingOutputSummary.Status == "Closed" ? 0 : vulnerability.Age;
+                        agingOutputSummary.Severity = vulnerability.Severity;
+                        agingOutputSummary.Query = vulnerability.QueryName;
+                        agingOutputSummary.QueryLanguage = vulnerability.QueryLanguage;
+                        agingOutputSummary.firstScan = vulnerability.firstScan;
+                        agingOutputSummary.lastScan = vulnerability.lastScan;
+                        agingOutputSummary.State = StateDescription((int)vulnerability.State);
+                        agingOutputSummary.scanCount = vulnerability.ScanCount;
+                        dynoList.Add(agingOutputSummary);
+                    }
                 }
             }
 
@@ -121,7 +113,7 @@ namespace CxAPI_Store
             else if (state == 3)
                 return "Urgent";
             else if (state == 4)
-                return "ProposedNotExploitable";
+                return "Proposed Not Exploitable";
             return "";
         }
         private string TrimFileName(string fileName)

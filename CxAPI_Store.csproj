@@ -4,9 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
-    <Version>1.1.0</Version>
+    <AssemblyVersion>1.4.3.0</AssemblyVersion>
+    <FileVersion>1.4.3.0</FileVersion>
+    <Version>1.4.3</Version>
+    <PackageReleaseNotes>Add two new reports
+</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,6 +53,9 @@
     </None>
     <None Update="canned\SummaryAndAgingReport.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="mitre\1026.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="sqlite-tools\sqldiff.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

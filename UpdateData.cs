@@ -20,6 +20,7 @@ namespace CxAPI_Store
         resultClass token;
         SQLiteMaster lite;
         SortedDictionary<string, bool> allKeys;
+        List<string> deleteList;
  
         DateTime runDate;
 
@@ -32,6 +33,7 @@ namespace CxAPI_Store
             //            dataSet.Tables.Add(new DataTable(ResultTable));
 
             allKeys = new SortedDictionary<string, bool>();
+            deleteList = new List<string>();
  
             lite = new SQLiteMaster(token);
             runDate = DateTime.UtcNow;
@@ -49,7 +51,7 @@ namespace CxAPI_Store
         {
             //move keys into dictionary object
             DataSet ds = lite.InitJustPrimaryKeys();
-            if (token.debug && token.verbosity > 0)
+            if (token.debug && token.verbosity > 1)
             {
                 Console.WriteLine("{0} rows in table {1}", lite.GetRowCount(ProjectTable), ProjectTable);
                 Console.WriteLine("{0} rows in table {1}", lite.GetRowCount(ScanTable), ScanTable);
@@ -194,22 +196,15 @@ namespace CxAPI_Store
             kvp.Add(new KeyValuePair<string, object>("FileName", fileName));
             return lite.TestforPrimaryKeys(MetaTable, kvp);
         }
-        private bool TestAndSetPrimaryKeys(string tableName, Dictionary<string,object> primaryKeys, bool delete = false)
+        private bool TestAndSetPrimaryKeys(string tableName, Dictionary<string,object> primaryKeys, bool delete = true)
         {
-            long deleteCount = 0;
-            if (TestPrimaryKeyinDictionary(primaryKeys))
-            {
-                if (!delete) return true;
-                else
-                {
-                    deleteCount = lite.DeleteUsingPrimaryKeys(tableName, primaryKeys);
-                }
-            }
-            else
+            if (!TestPrimaryKeyinDictionary(primaryKeys))
             {
                 AddPrimaryKeytoDictionary(primaryKeys);
+                deleteList.Add(lite.BuildDeleteUsingPrimaryKeys(tableName, primaryKeys));
+                return false;
             }
-            return false;
+            return true;
         }
         private Dictionary<string,object> AddToDict(Dictionary<string,object> mapDictionary, object mapObject, List<object> primaryKeys)
         {
@@ -237,14 +232,23 @@ namespace CxAPI_Store
 
         private bool addObject(string tableName, List<object> mapObjects, string fileName)
         {
-            lite.InsertObjectListToSQLite(tableName, mapObjects, token.max_write == 0 ? mapObjects.Count : token.max_write) ;
+            if (mapObjects.Count > 0)
+            {
+                lite.DeleteAllPrimaryKeys(deleteList, tableName);
+                deleteList.Clear();
+                lite.InsertObjectListToSQLite(tableName, mapObjects, token.max_write == 0 ? mapObjects.Count : token.max_write);
+            }
+            else
+            {
+                Console.WriteLine("Warning, filename: {0} is empty, no records found!", fileName);
+            }
             if (!String.IsNullOrEmpty(fileName)) addObjectMetaData(fileName);
             return true;
         }
 
         private bool addObjectMetaData(string fileName)
         {
-            if (token.debug && token.verbosity > 0) Console.WriteLine("Processed file {0}", fileName);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("Processed file {0}", fileName);
             var meta = new CxMetaData()
             {
                 ArchivalFilePath = token.archival_path,
@@ -257,19 +261,19 @@ namespace CxAPI_Store
         }
         public void loadDataSet(bool startNew = true)
         {
-            if (token.debug && token.verbosity > 0 && startNew) Console.WriteLine("Initializing database");
+            if (token.debug && token.verbosity > 1 && startNew) Console.WriteLine("Initializing database");
 
             //           if (!startNew)
             //               restoreFullDataSet();
 
             if (Directory.EnumerateFiles(token.archival_path, "sast_project_info.*.log").Any())
             {
-                if (token.debug && token.verbosity > 0) Console.WriteLine("Using data from CxAnalytix");
+                if (token.debug && token.verbosity > 1) Console.WriteLine("Using data from CxAnalytix");
                 loadAnalytix();
             }
             else
             {
-                if (token.debug && token.verbosity > 0) Console.WriteLine("Using data from CxStore");
+                if (token.debug && token.verbosity > 1) Console.WriteLine("Using data from CxStore");
                 loadRawFiles();
             }
 
@@ -291,8 +295,8 @@ namespace CxAPI_Store
         {
             Dictionary<string, object> projects = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ProjectTable);
-            Spinner.Run(() =>
-            {
+ //           Spinner.Run(() =>
+ //           {
                 var jsonFiles = GetOrderedFileList(token.archival_path, "sast_project_info.*.log");
                 //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_project_info.*.log");
                 foreach (string filename in jsonFiles)
@@ -311,15 +315,15 @@ namespace CxAPI_Store
                         projects.Clear();
                     }
                 }
-            });
+//           });
             return true;
         }
         private bool getScans()
         {
             Dictionary<string, object> scans = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ScanTable);
-            Spinner.Run(() =>
-            {
+//            Spinner.Run(() =>
+//            {
                 var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_summary.*.log");
                 //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_summary.*.log");
                 foreach (string filename in jsonFiles)
@@ -329,24 +333,24 @@ namespace CxAPI_Store
                         foreach (string content in File.ReadAllLines(filename))
                         {
                             CxScan scan = JsonConvert.DeserializeObject<CxScan>(content);
-                            if (!TestAndSetPrimaryKeys(ScanTable, new Dictionary<string, object>() { { "ProjectId", scan.ProjectId }, { "ScanId", scan.ScanId } }, true))
+                            if (!TestAndSetPrimaryKeys(ScanTable, new Dictionary<string, object>() { { "ProjectId", scan.ProjectId }, { "ScanId", scan.ScanId }, { "ScanFinished", scan.ScanFinished } }, true))
                             {
-                                AddToDict(scans, scan, new List<object>() { scan.ProjectId, scan.ScanId });
+                                AddToDict(scans, scan, new List<object>() { scan.ProjectId, scan.ScanId, scan.ScanFinished });
                             }
                         }
                         addObject(ScanTable, new List<object>(scans.Values), filename);
                         scans.Clear();
                     }
                 }
-            });
+//            });
             return true;
         }
         private bool getResults()
         {
             Dictionary<string, object> results = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ResultTable);
-            Spinner.Run(() =>
-            {
+//            Spinner.Run(() =>
+//            {
                 var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_detail.*.log");
                 //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_detail.*.log");
                 foreach (string filename in jsonFiles)
@@ -364,7 +368,7 @@ namespace CxAPI_Store
                         results.Clear();
                     }
                 }
-            });
+//            });
 
             return true;
         }
@@ -721,7 +725,7 @@ namespace CxAPI_Store
             {
                 try
                 {
-                    if (token.debug && token.verbosity > 0) Console.WriteLine("ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
+                    if (token.debug && token.verbosity > 1) Console.WriteLine("ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
                     results = Flatten.DeserializeAndFlatten(scanValues[item.Key], new Dictionary<string, object>());
                     results = Flatten.DeserializeAndFlatten(resultStatisticsValues[item.Key], results);
                     XmlDocument doc = new XmlDocument();
@@ -735,7 +739,7 @@ namespace CxAPI_Store
                 }
                 catch (Exception ex)
                 {
-                    if (token.debug && token.verbosity > 0) Console.WriteLine("Failed to load ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
+                    if (token.debug && token.verbosity > 1) Console.WriteLine("Failed to load ProjectName {0} ProjectId: {1} ScanId {2}", project.name, project.id, item.Key);
                     Console.WriteLine("Failure fetching detail xml {0} : {1}", item.Key, ex.Message);
                 }
             }

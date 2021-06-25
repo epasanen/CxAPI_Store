@@ -4,6 +4,7 @@ using System.Data;
 using System.Text;
 using System.Linq;
 using CxAPI_Store.dto;
+using System.Xml.Linq;
 
 namespace CxAPI_Store
 {
@@ -121,9 +122,9 @@ namespace CxAPI_Store
                 State.Add(s, 0);
             }
         }
-        public object GetCorrectCounts(long projectId, long ScanId)
+        public object GetCorrectCounts(long projectId, long ScanId, string falsePositive = "True")
         {
-            string sql = String.Format("Select Distinct  SimilarityId, ResultId, PathId, State, ResultSeverity from Results where ProjectId = {0} and ScanId = {1} and FalsePositive != 'True'", projectId, ScanId);
+            string sql = String.Format("Select SimilarityId, ResultId, PathId, State, ResultSeverity from Results where ProjectId = {0} and ScanId = {1} and FalsePositive != '{2}'", projectId, ScanId, falsePositive);
             DataTable table = sqlite.SelectIntoDataTable("CorrectCount", sql);
             Severity["High"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "High").Count();
             Severity["Medium"] = table.AsEnumerable().Where(w => w.Field<string>("ResultSeverity") == "Medium").Count();
@@ -133,7 +134,8 @@ namespace CxAPI_Store
             long stateCount = 0;
             foreach (string Key in Loop)
             {
-                State[Key] = table.AsEnumerable().Where(w => w.Field<long>("State") == stateCount++).Count();
+                State[Key] = table.AsEnumerable().Where(w => w.Field<long>("State") == stateCount).Count();
+                stateCount++;
             }
             return this;
         }
@@ -174,6 +176,7 @@ namespace CxAPI_Store
         public string ChangeEvent { get; set; }
         public long ProjectId { get; set; }
         public long SimilarityId { get; set; }
+        public long FileNameHash { get; set; }
         public string ProjectName { get; set; }
         public long ScanId { get; set; }
         public long PathId { get; set; }
@@ -190,6 +193,7 @@ namespace CxAPI_Store
         public long State { get; set; }
         public string QueryName { get; set; }
         public string QueryLanguage { get; set; }
+        public long QueryCweId { get; set; }
         public DateTime firstScan { get; set; }
         public DateTime lastScan { get; set; }
 
@@ -215,9 +219,11 @@ namespace CxAPI_Store
             this.QueryName = options.QueryName;
             this.QueryLanguage = options.QueryLanguage;
             this.SimilarityId = options.SimilarityId;
+            this.FileNameHash = options.FileNameHash;
             this.Severity = options.Severity;
             this.NodeFileName = options.NodeFileName;
             this.DeepLink = options.DeepLink;
+            this.QueryCweId = options.QueryCweId;
 
             this.isFalsePositive = fp;
             this.Open = open;
@@ -280,7 +286,7 @@ namespace CxAPI_Store
         public long State { get; set; }
         public string QueryName { get; set; }
         public string QueryLanguage { get; set; }
-
+        public long QueryCweId { get; set; }
 
 
 
@@ -324,127 +330,145 @@ namespace CxAPI_Store
             if (token.end_time != null)
                 range.Append(String.Format("and ScanFinished < datetime('{0:yyyy-MM-ddThh:mm:ss}') ", token.end_time));
 
-            var firstscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished {2} limit 1", sql.ToString(), range.ToString(), "ASC")).AsEnumerable()
+            var allscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished asc ", sql.ToString(), range.ToString())).AsEnumerable()
+
                 .Select(row => new
                 {
                     ScanId = row.Field<long>("ScanId"),
                     ScanFinished = row.Field<string>("ScanFinished")
-                })
-                .FirstOrDefault();
+                });
 
-            var lastscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished {2} limit 1", sql.ToString(), range.ToString(), "DESC")).AsEnumerable()
-                .Select(row => new
-                {
-                    ScanId = row.Field<long>("ScanId"),
-                    ScanFinished = row.Field<string>("ScanFinished")
-                })
-                .FirstOrDefault();
+            var firstscan = allscan.FirstOrDefault();
+            var lastscan = allscan.LastOrDefault();
 
+            /*
+                        var lastscan = sqlite.SelectIntoDataTable("ScanResult", String.Format(" {0} {1} order by ScanFinished {2} limit 1", sql.ToString(), range.ToString(), "DESC")).AsEnumerable()
+                            .Select(row => new
+                            {
+                                ScanId = row.Field<long>("ScanId"),
+                                ScanFinished = row.Field<string>("ScanFinished")
+                            })
+                            .FirstOrDefault();
+             */
             sql.Clear();
 
             sql.Append(String.Format("Select * from Results where ProjectId = {0}", ProjectId));
+            if (firstscan != null)
+            {
+                var first = sqlite.SelectIntoDataTable("FirstResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), firstscan.ScanId)).AsEnumerable()
+                    .Select(row => new CxOptions
+                    {
+                        Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                        SimilarityId = row.Field<long>("SimilarityId"),
+                        FileNameHash = row.Field<long>("FileNameHash"),
+                        ScanFinished = row.Field<string>("ScanFinished"),
+                        FalsePositive = row.Field<string>("FalsePositive"),
+                        Remark = row.Field<string>("Remark"),
+                        ProjectId = row.Field<long>("ProjectId"),
+                        ProjectName = row.Field<string>("ProjectName"),
+                        PathId = row.Field<long>("PathId"),
+                        ScanId = row.Field<long>("ScanId"),
+                        VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                        Severity = row.Field<string>("ResultSeverity"),
+                        NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                        NodeColumn = row.Field<long>("NodeColumn"),
+                        NodeFileName = row.Field<string>("NodeFileName"),
+                        NodeLine = row.Field<long>("NodeLine"),
+                        DeepLink = row.Field<string>("ResultDeepLink"),
+                        State = row.Field<long>("State"),
+                        QueryName = row.Field<string>("QueryName"),
+                        QueryLanguage = row.Field<string>("QueryLanguage"),
+                        QueryCweId = row.Field<long>("QueryCweId")
 
-            var first = sqlite.SelectIntoDataTable("FirstResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), firstscan.ScanId)).AsEnumerable()
-                .Select(row => new CxOptions
-                {
-                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
-                    SimilarityId = row.Field<long>("SimilarityId"),
-                    FileNameHash = row.Field<long>("FileNameHash"),
-                    ScanFinished = row.Field<string>("ScanFinished"),
-                    FalsePositive = row.Field<string>("FalsePositive"),
-                    Remark = row.Field<string>("Remark"),
-                    ProjectId = row.Field<long>("ProjectId"),
-                    ProjectName = row.Field<string>("ProjectName"),
-                    PathId = row.Field<long>("PathId"),
-                    ScanId = row.Field<long>("ScanId"),
-                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
-                    Severity = row.Field<string>("ResultSeverity"),
-                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
-                    NodeColumn = row.Field<long>("NodeColumn"),
-                    NodeFileName = row.Field<string>("NodeFileName"),
-                    NodeLine = row.Field<long>("NodeLine"),
-                    DeepLink = row.Field<string>("ResultDeepLink"),
-                    State = row.Field<long>("State"),
-                    QueryName = row.Field<string>("QueryName"),
-                    QueryLanguage = row.Field<string>("QueryLanguage"),
+                    })
+                     .ToHashSet();
 
-                })
-                 .ToHashSet();
+                var last = sqlite.SelectIntoDataTable("LastResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), lastscan.ScanId)).AsEnumerable()
+                    .Select(row => new CxOptions
+                    {
+                        Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                        SimilarityId = row.Field<long>("SimilarityId"),
+                        FileNameHash = row.Field<long>("FileNameHash"),
+                        ScanFinished = row.Field<string>("ScanFinished"),
+                        FalsePositive = row.Field<string>("FalsePositive"),
+                        Remark = row.Field<string>("Remark"),
+                        ProjectId = row.Field<long>("ProjectId"),
+                        ProjectName = row.Field<string>("ProjectName"),
+                        PathId = row.Field<long>("PathId"),
+                        ScanId = row.Field<long>("ScanId"),
+                        VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                        Severity = row.Field<string>("ResultSeverity"),
+                        NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                        NodeColumn = row.Field<long>("NodeColumn"),
+                        NodeFileName = row.Field<string>("NodeFileName"),
+                        NodeLine = row.Field<long>("NodeLine"),
+                        DeepLink = row.Field<string>("ResultDeepLink"),
+                        State = row.Field<long>("State"),
+                        QueryName = row.Field<string>("QueryName"),
+                        QueryLanguage = row.Field<string>("QueryLanguage"),
+                        QueryCweId = row.Field<long>("QueryCweId")
+                    })
+                    .ToHashSet();
 
-            var last = sqlite.SelectIntoDataTable("LastResult", String.Format("{0} and ScanID = {1} ", sql.ToString(), lastscan.ScanId)).AsEnumerable()
-                .Select(row => new CxOptions
-                {
-                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
-                    SimilarityId = row.Field<long>("SimilarityId"),
-                    FileNameHash = row.Field<long>("FileNameHash"),
-                    ScanFinished = row.Field<string>("ScanFinished"),
-                    FalsePositive = row.Field<string>("FalsePositive"),
-                    Remark = row.Field<string>("Remark"),
-                    ProjectId = row.Field<long>("ProjectId"),
-                    ProjectName = row.Field<string>("ProjectName"),
-                    PathId = row.Field<long>("PathId"),
-                    ScanId = row.Field<long>("ScanId"),
-                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
-                    Severity = row.Field<string>("ResultSeverity"),
-                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
-                    NodeColumn = row.Field<long>("NodeColumn"),
-                    NodeFileName = row.Field<string>("NodeFileName"),
-                    NodeLine = row.Field<long>("NodeLine"),
-                    DeepLink = row.Field<string>("ResultDeepLink"),
-                    State = row.Field<long>("State"),
-                    QueryName = row.Field<string>("QueryName"),
-                    QueryLanguage = row.Field<string>("QueryLanguage"),
-                })
-                .ToHashSet();
+                //var firstKeys = new HashSet<long>(first.Select(x => x.SimilarityId));
+                //string keys = String.Format(" and SimilarityId in ({0})", String.Join(',', firstKeys.ToArray()));
 
-            var firstKeys = new HashSet<long>(first.Select(x => x.SimilarityId));
-            string keys = String.Format(" and SimilarityId in ({0})", String.Join(',', firstKeys.ToArray()));
-
-            var all = sqlite.SelectIntoDataTable("AllResults", String.Format("{0} {1} {2} order by ScanFinished", sql.ToString(), range.ToString(), keys)).AsEnumerable()
-                .Select(row => new CxOptions
-                {
-                    Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
-                    SimilarityId = row.Field<long>("SimilarityId"),
-                    FileNameHash = row.Field<long>("FileNameHash"),
-                    ScanFinished = row.Field<string>("ScanFinished"),
-                    FalsePositive = row.Field<string>("FalsePositive"),
-                    Remark = row.Field<string>("Remark"),
-                    ProjectId = row.Field<long>("ProjectId"),
-                    ProjectName = row.Field<string>("ProjectName"),
-                    PathId = row.Field<long>("PathId"),
-                    ScanId = row.Field<long>("ScanId"),
-                    VulnerabilityId = row.Field<long>("VulnerabilityId"),
-                    Severity = row.Field<string>("ResultSeverity"),
-                    NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
-                    NodeColumn = row.Field<long>("NodeColumn"),
-                    NodeFileName = row.Field<string>("NodeFileName"),
-                    NodeLine = row.Field<long>("NodeLine"),
-                    DeepLink = row.Field<string>("ResultDeepLink"),
-                    State = row.Field<long>("State"),
-                    QueryName = row.Field<string>("QueryName"),
-                    QueryLanguage = row.Field<string>("QueryLanguage"),
-                })
-                .ToHashSet();
+                var matchscan = allscan.Select(r => string.Format("{0}", string.Join(",", r.ScanId)));
+                var scans = string.Join(",", matchscan);
+                if (!String.IsNullOrEmpty(scans))
+                    scans = String.Format(" and ScanId in ({0}) ", scans);
+                else
+                    scans = "";
 
 
-            var recurringKey = new HashSet<string>(first.Select(x => x.Key));
-            var recurringLast = new HashSet<string>(last.Where(x => recurringKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
-            var recurringResult = (last.Where(x => recurringLast.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Recurring") })).ToHashSet();
-            first.RemoveWhere(x => recurringLast.Contains(x.Key));
-            last.RemoveWhere(x => recurringLast.Contains(x.Key));
+                var all = sqlite.SelectIntoDataTable("AllResults", String.Format("{0} {1} {2} order by ScanFinished", sql.ToString(), range.ToString(), scans)).AsEnumerable()
+                    .Select(row => new CxOptions
+                    {
+                        Key = String.Format("{0:D10}_{1:D10}", row.Field<long>("SimilarityId"), row.Field<long>("FileNameHash")),
+                        SimilarityId = row.Field<long>("SimilarityId"),
+                        FileNameHash = row.Field<long>("FileNameHash"),
+                        ScanFinished = row.Field<string>("ScanFinished"),
+                        FalsePositive = row.Field<string>("FalsePositive"),
+                        Remark = row.Field<string>("Remark"),
+                        ProjectId = row.Field<long>("ProjectId"),
+                        ProjectName = row.Field<string>("ProjectName"),
+                        PathId = row.Field<long>("PathId"),
+                        ScanId = row.Field<long>("ScanId"),
+                        VulnerabilityId = row.Field<long>("VulnerabilityId"),
+                        Severity = row.Field<string>("ResultSeverity"),
+                        NodeCodeSnippet = row.Field<string>("NodeCodeSnippet"),
+                        NodeColumn = row.Field<long>("NodeColumn"),
+                        NodeFileName = row.Field<string>("NodeFileName"),
+                        NodeLine = row.Field<long>("NodeLine"),
+                        DeepLink = row.Field<string>("ResultDeepLink"),
+                        State = row.Field<long>("State"),
+                        QueryName = row.Field<string>("QueryName"),
+                        QueryLanguage = row.Field<string>("QueryLanguage"),
+                        QueryCweId = row.Field<long>("QueryCweId")
+                    })
+                    .ToHashSet();
 
-            var newKey = new HashSet<string>(last.Select(x => x.Key));
-            var allNew = new HashSet<string>(all.Where(x => newKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
-            var allNewResult = all.Where(x => allNew.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "New") }).ToHashSet();
-            last.RemoveWhere(x => allNew.Contains(x.Key));
-            all.RemoveWhere(x => allNew.Contains(x.Key));
 
-            var fixedKey = new HashSet<string>(first.Select(x => x.Key));
-            var fixedAll = new HashSet<string>(all.Where(x => fixedKey.Contains(x.Key)).OrderByDescending(o => o.ScanFinished).Select(x => x.Key).Distinct());
-            var allFixedResult = all.Where(x => fixedAll.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Fixed") }).ToHashSet();
-            last.RemoveWhere(x => fixedAll.Contains(x.Key));
-            all.RemoveWhere(x => fixedAll.Contains(x.Key));
+                var recurringKey = new HashSet<string>(first.Select(x => x.Key));
+                var recurringLast = new HashSet<string>(last.Where(x => recurringKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
+                var recurringResult = (last.Where(x => recurringLast.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Recurring") })).ToHashSet();
+                first.RemoveWhere(x => recurringLast.Contains(x.Key));
+                last.RemoveWhere(x => recurringLast.Contains(x.Key));
 
+                var newKey = new HashSet<string>(last.Select(x => x.Key));
+                var allNew = new HashSet<string>(all.Where(x => newKey.Contains(x.Key)).OrderBy(o => o.ScanFinished).Select(x => x.Key).Distinct());
+                var allNewResult = all.Where(x => allNew.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "New") }).ToHashSet();
+                last.RemoveWhere(x => allNew.Contains(x.Key));
+                all.RemoveWhere(x => allNew.Contains(x.Key));
+
+                var fixedKey = new HashSet<string>(first.Select(x => x.Key));
+                var fixedAll = new HashSet<string>(all.Where(x => fixedKey.Contains(x.Key)).OrderByDescending(o => o.ScanFinished).Select(x => x.Key).Distinct());
+                var allFixedResult = all.Where(x => fixedAll.Contains(x.Key)).Select(s => new { v = SetVulnerability(vulnerability, s, all, "Fixed") }).ToHashSet();
+                last.RemoveWhere(x => fixedAll.Contains(x.Key));
+                all.RemoveWhere(x => fixedAll.Contains(x.Key));
+
+
+            }
             return this;
 
         }
@@ -542,6 +566,63 @@ namespace CxAPI_Store
             owasp.Add(A9, "A9-Using Components with Known Vulnerabilities");
             owasp.Add(A10, "A10-Insufficient Logging & Monitoring");
         }
+    }
+
+    public class mitre
+    {
+
+        public Dictionary<int[], string> cweId { get; set; }
+        private resultClass token;
+
+        public mitre(resultClass token)
+        {
+            this.token = token;
+        }
+        public void load_owasp(string topCategory = "1026")
+        {
+            cweId = new Dictionary<int[], string>();
+
+            string xmlPath = String.Format("{0}{1}mitre{1}{2).xml", token.exe_path, token.os_path, topCategory);
+            var xml = XElement.Load(xmlPath);
+            var categories = xml.Descendants(xml.Name.Namespace.GetName("Categories")).Descendants(xml.Name.Namespace.GetName("Category"));
+    
+            foreach (XElement category in categories)
+            {
+                string name = (string)category.Attribute("Name");
+                var allMembers = category.Descendants(xml.Name.Namespace.GetName("Has_Member"));
+                List<int> intList = new List<int>();
+                foreach (XElement hasMember in allMembers)
+                {
+                    intList.Add((int)hasMember.Attribute("CWE_ID"));
+                }
+                if (intList.Count == 0)
+                    intList.Add(0);
+                cweId.Add(intList.ToArray(), name);
+            }
+
+        }
+        public void load_mitre(string topCategory = "1350")
+        {
+
+            string xmlPath = String.Format("{0}{1}mitre{1}{2).xml", token.exe_path, token.os_path, topCategory);
+            var xml = XElement.Load(xmlPath);
+            var categories = xml.Descendants(xml.Name.Namespace.GetName("Weaknesses")).Descendants(xml.Name.Namespace.GetName("Weakness"));
+            //categories.Dump();
+            foreach (XElement category in categories)
+            {
+                string name = (string)category.Attribute("Name");
+                var allMembers = category.Descendants(xml.Name.Namespace.GetName("Related_Weakness"));
+                List<int> intList = new List<int>();
+                foreach (XElement hasMember in allMembers)
+                {
+                    intList.Add((int)hasMember.Attribute("CWE_ID"));
+                }
+                if (intList.Count == 0)
+                    intList.Add(0);
+                cweId.Add(intList.ToArray(), name);
+            }
+        }
+
     }
 
 }

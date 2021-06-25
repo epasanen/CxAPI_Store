@@ -130,7 +130,7 @@ namespace CxAPI_Store
                     Console.WriteLine("Failed commit to table {0}", table.TableName);
                 }
             }
-            if (token.debug && token.verbosity > 0) Console.WriteLine("\n{0} records exist in table {1}", GetRowCount(table.TableName), table.TableName);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("\n{0} records exist in table {1}", GetRowCount(table.TableName), table.TableName);
         }
 
         public SQLiteDataAdapter SelectSQLWithParameters(DataTable table, string where = null)
@@ -157,7 +157,7 @@ namespace CxAPI_Store
                     myAdapter.Fill(table);
                 }
             }
-            if (token.debug && token.verbosity > 0) Console.WriteLine("{0} records returned {1}", table.Rows.Count, table.TableName);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("{0} records returned {1}", table.Rows.Count, table.TableName);
             return table;
         }
         public DataTable SelectIntoDataTable(DataTable table, string tableName, string where = null)
@@ -172,7 +172,7 @@ namespace CxAPI_Store
                 myAdapter.Fill(local);
             }
 
-            if (token.debug && token.verbosity > 0) Console.WriteLine("{0} records returned {1}", local.Rows.Count, local.TableName);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("{0} records returned {1}", local.Rows.Count, local.TableName);
             return local;
         }
 
@@ -187,7 +187,7 @@ namespace CxAPI_Store
                 myAdapter.Fill(local);
             }
 
-            if (token.debug && token.verbosity > 0) Console.WriteLine("{0} records returned {1}", local.Rows.Count, local.TableName);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("{0} records returned {1}", local.Rows.Count, local.TableName);
             return local;
         }
 
@@ -744,7 +744,7 @@ namespace CxAPI_Store
         {
             DataSet ds = new DataSet();
             ds.Tables.Add(InitDataTable(new CxProject(), ProjectTable, new List<string>() { "ProjectId" }));
-            ds.Tables.Add(InitDataTable(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanId" }));
+            ds.Tables.Add(InitDataTable(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanId", "ScanFinished" }));
             ds.Tables.Add(InitDataTable(new CxResult(), ResultTable, new List<string>() { "ProjectId", "VulnerabilityId", "SimilarityId", "FileNameHash" }));
             ds.Tables.Add(InitDataTable(new CxMetaData(), MetaTable, new List<string>() { "FileName" }));
 
@@ -754,12 +754,11 @@ namespace CxAPI_Store
         {
             DataSet ds = new DataSet();
             ds.Tables.Add(InitSimpleDataTable(new CxProject(), ProjectTable, new List<string>() { "ProjectId" }));
-            ds.Tables.Add(InitSimpleDataTable(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanId" }));
+            ds.Tables.Add(InitSimpleDataTable(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanId", "ScanFinished" }));
             ds.Tables.Add(InitSimpleDataTable(new CxResult(), ResultTable, new List<string>() { "ProjectId", "VulnerabilityId", "SimilarityId", "FileNameHash" }));
             ds.Tables.Add(InitSimpleDataTable(new CxMetaData(), MetaTable, new List<string>() { "FileName" }));
             return ds;
         }
-
 
         private DataTable InitSimpleDataTable(object mapObject, string tableName, List<string> primaryKeys)
         {
@@ -806,7 +805,7 @@ namespace CxAPI_Store
         public void InitAllSQLTables()
         {
             CreateTableFromObject(new CxProject(), ProjectTable, new List<string>() { "ProjectId" });
-            CreateTableFromObject(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanFinished" });
+            CreateTableFromObject(new CxScan(), ScanTable, new List<string>() { "ProjectId", "ScanId", "ScanFinished" });
             CreateTableFromObject(new CxResult(), ResultTable, new List<string>() { "ProjectId", "VulnerabilityId", "SimilarityId", "FileNameHash" });
             CreateTableFromObject(new CxMetaData(), MetaTable, new List<string>() { "FileName" });
             AddDefaultIndexes();
@@ -849,6 +848,31 @@ namespace CxAPI_Store
             }
             return sql;
         }
+        public void DeleteAllPrimaryKeys(List<string> deleteList, String tableName)
+        {
+            String sql = String.Empty;
+
+            foreach (string eachQuery in deleteList)
+            {
+                sql += String.Format("{0};{1}", eachQuery, Environment.NewLine);
+            }
+
+            if (token.debug && token.verbosity > 1) Console.Write("{0}", sql);
+            CommitToSQLite(sql);
+        }
+        public string BuildDeleteUsingPrimaryKeys(string tableName, Dictionary<string, object> primaryKeys)
+        {
+            StringBuilder sql = new StringBuilder(String.Format("Delete FROM {0} where 1=1 ", tableName));
+            foreach (string Key in primaryKeys.Keys)
+            {
+                if (primaryKeys[Key].GetType() == typeof(string) || primaryKeys[Key].GetType() == typeof(DateTime))
+                    sql.Append(String.Format(" and {0} = '{1}'", Key, primaryKeys[Key]));
+                else
+                    sql.Append(String.Format(" and {0} = {1}", Key, primaryKeys[Key]));
+            }
+            return sql.ToString();
+        }
+
         public long DeleteUsingPrimaryKeys(string tableName, Dictionary<string, object> primaryKeys)
         {
             StringBuilder sql = new StringBuilder(String.Format("Delete FROM {0} where 1=1 ", tableName));
@@ -879,7 +903,7 @@ namespace CxAPI_Store
         public bool AddDefaultIndex(string tableName, string column)
         {
             string SQL = String.Format("Create index idx_{0}_{1} on {0}({1})", tableName, column);
-            if (token.debug && token.verbosity > 0) Console.WriteLine("Indexing: {0}", SQL);
+            if (token.debug && token.verbosity > 1) Console.WriteLine("Indexing: {0}", SQL);
             return CommitToSQLite(SQL, false);
         }
         public bool AddDefaultIndexes()

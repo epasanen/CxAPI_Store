@@ -63,11 +63,11 @@ namespace CxAPI_Store
             StringBuilder sql = new StringBuilder();
 
             if (!String.IsNullOrEmpty(token.project_name))
-                sql.Append(String.Format("and ProjectName like '{0}' ", token.project_name));
+                sql.Append(String.Format("and ProjectName like '%{0}%' ", token.project_name));
             if (!String.IsNullOrEmpty(token.team_name))
-                sql.Append(String.Format("and TeamName like '{0}' ", token.team_name));
+                sql.Append(String.Format("and TeamName like '%{0}%' ", token.team_name));
             if (!String.IsNullOrEmpty(token.preset))
-                sql.Append(String.Format("and Preset like '{0}' ", token.preset));
+                sql.Append(String.Format("and Preset like '%{0}%' ", token.preset));
             if (!String.IsNullOrEmpty(token.query_filter))
                 sql.Append(String.Format("and ({0}) ", token.query_filter));
 
@@ -76,7 +76,7 @@ namespace CxAPI_Store
             var projects = string.Join(",", matchproject);
 
             sql.Clear();
-
+    
             if (token.start_time != null)
                 sql.Append(String.Format("and ScanFinished > datetime('{0:yyyy-MM-ddThh:mm:ss}') ", token.start_time));
             if (token.end_time != null)
@@ -88,14 +88,12 @@ namespace CxAPI_Store
             var scans = string.Join(",", matchscan);
             sql.Clear();
 
-/*            var listScans = dataSet.Tables[ScanTable].AsEnumerable()
-                .OrderBy(s => s.Field<long>("ScanId"))
-                .Select(row => new { ScanId = row.Field<long>("ScanId") })
-                .ToList();
+            //var listScans = dataSet.Tables[ScanTable].AsEnumerable()
+            //     .OrderBy(s => s.Field<long>("ScanId"))
+            //     .Select(row => new { ScanId = row.Field<long>("ScanId") })
+            //     .ToList();
 
-            dataTableReplace(lite.SelectIntoDataTable(dataSet.Tables[ResultTable], FirstResult, String.Format("and ScanId = {0}", listScans.FirstOrDefault().ScanId)));
-            dataTableReplace(lite.SelectIntoDataTable(dataSet.Tables[ResultTable], LastResult, String.Format("and ScanId = {0}", listScans.LastOrDefault().ScanId)));
-*/
+            dataTableReplace(lite.SelectIntoDataTable(dataSet.Tables[ResultTable], FirstResult, String.Format("and ProjectId in ({0}) and ScanId in ({1})", projects, scans)));
 
             return dataSet;
         }

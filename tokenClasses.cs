@@ -96,6 +96,8 @@ namespace CxAPI_Store
             max_write = 0;
             canned = false;
             stop = false;
+            start_time = null;
+            end_time = null;
 
         }
 

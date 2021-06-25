@@ -9,36 +9,48 @@ using System.Dynamic;
 
 namespace CxAPI_Store
 {
-    public partial class AgingOutput
+    public partial class AgingOutputDashboard
     {
-        public string ProjectName { get; set; }
-        public string Team { get; set; }
-        public string PresetName { get; set; }
-        public string Query { get; set; }
-        public string QueryLanguage { get; set; }
-        public long similarityId { get; set; }
-        public string isFalsePositive { get; set; }
-        public string StateDesc { get; set; }
-        public string Status { get; set; }
-        public string Severity { get; set; }
-        public int lineNo { get; set; }
-        public int column { get; set; }
-        public string fileName { get; set; }
-        public string deepLink { get; set; }
-        public string remark { get; set; }
-        public DateTimeOffset firstScan { get; set; }
-        public DateTimeOffset lastScan { get; set; }
-        public int age { get; set; }
-        public int scanCount { get; set; }
+        public string Id { get; set; }
+        public string Url { get; set; }
+        public string opened { get; set; }
+        public string closed { get; set; }
+        public string modified { get; set; }
+        public string status { get; set; }
+        public string workflowStage { get; set; }
+        public string Class { get; set; }
+        public string assetUrl { get; set; }
+        public string rating { get; set; }
+        public string description { get; set; }
+        public string solution { get; set; }
+        public string cvssScore { get; set; }
+        public string cve { get; set; }
+        public string firstFound { get; set; }
+        public string priority{ get; set; }
+        public string treatmentAdded { get; set; }
+        public string application { get; set; }
+        public string technicalOwner { get; set; }
+        public string internetFacing { get; set; }
+        public string daysToFix { get; set; }
+
+        public AgingOutputDashboard()
+        {
+            this.treatmentAdded = "Null";
+            this.internetFacing = "Null";
+            this.daysToFix = "Null";
+            this.cvssScore = "Null";
+            this.Url = "Null";
+        }
+
     }
-    public class DetailAgingReport
+    public class DetailAgingReportDashboard
     {
 
         private MakeReports makeReports;
         private resultClass token;
         private DataSet dataSet;
         private SQLiteMaster sqlite;
-        public DetailAgingReport(resultClass token, MakeReports makeReports)
+        public DetailAgingReportDashboard(resultClass token, MakeReports makeReports)
         {
             this.token = token;
             this.makeReports = makeReports;
@@ -71,33 +83,29 @@ namespace CxAPI_Store
 
                 foreach (string key in getResult.vulnerability.Keys)
                 {
-                    AgingOutput agingOutput = new AgingOutput();
+                    AgingOutputDashboard agingOutput = new AgingOutputDashboard();
                     Vulnerability vulnerability = getResult.vulnerability[key];
 
-                    agingOutput.ProjectName = pdr.ProjectName;
-                    agingOutput.Team = pdr.TeamName;
-                    agingOutput.PresetName = pdr.Preset;
-                    agingOutput.remark = vulnerability.Remark;
-                    agingOutput.age = vulnerability.Age;
-                    agingOutput.Severity = vulnerability.Severity;
-                    agingOutput.lineNo = (int)vulnerability.NodeLine;
-                    agingOutput.column = (int)vulnerability.NodeColumn;
-                    agingOutput.deepLink = vulnerability.DeepLink;
-                    agingOutput.Status = vulnerability.VulnerabilityStatus;
-                    agingOutput.isFalsePositive = vulnerability.isFalsePositive ? "True" : "False";
-                    agingOutput.fileName = TrimFileName(vulnerability.NodeFileName);
-                    agingOutput.StateDesc = StateDescription((int)vulnerability.State);
-                    agingOutput.Query = vulnerability.QueryName;
-                    agingOutput.QueryLanguage = vulnerability.QueryLanguage;
-                    agingOutput.similarityId = vulnerability.SimilarityId;
-                    agingOutput.firstScan = vulnerability.firstScan;
-                    agingOutput.lastScan = vulnerability.lastScan;
-                    agingOutput.scanCount = vulnerability.ScanCount;
+                    agingOutput.status = vulnerability.VulnerabilityStatus.Contains("Closed") || vulnerability.VulnerabilityStatus.Contains("Fixed") ? "Closed" : "Open";
+                    agingOutput.Id = String.Format("{0}_{1}", vulnerability.SimilarityId, vulnerability.FileNameHash);
+                    agingOutput.Url = "Null";
+                    agingOutput.opened = agingOutput.status.Contains("Open") ? vulnerability.firstScan.ToString("yyyy-MM-dd") : "Null";
+                    agingOutput.closed = agingOutput.status.Contains("Closed") ? vulnerability.firstScan.ToString("yyyy-MM-dd") : "Null";
+                    agingOutput.modified = vulnerability.ChangeDate.ToString("yyyy-MM-dd").Contains("0001") ? "Null" : vulnerability.ChangeDate.ToString("yyyy-MM-dd");
+                    agingOutput.workflowStage = StateDescription((int)vulnerability.State).Contains("Proposed") ? "Proposed" : "None";
+                    agingOutput.Class = vulnerability.QueryName;
+                    agingOutput.assetUrl = TrimFileName(vulnerability.NodeFileName);
+                    agingOutput.rating = StateDescription((int)vulnerability.State);
+                    agingOutput.description = vulnerability.DeepLink;
+                    agingOutput.solution = vulnerability.ChangeEvent;
+                    agingOutput.cve = vulnerability.QueryCweId.ToString();
+                    agingOutput.firstFound = vulnerability.firstScan.ToString("yyyy-MM-dd");
+                    agingOutput.priority = vulnerability.Severity;
+                    agingOutput.application = pdr.ProjectName;
+                    agingOutput.technicalOwner = pdr.TeamName;
                     dynoList.Add(agingOutput);
-
                 }
             }
-
 
             if (token.debug && token.verbosity > 1)
             {
@@ -121,7 +129,7 @@ namespace CxAPI_Store
             else if (state == 3)
                 return "Urgent";
             else if (state == 4)
-                return "ProposedNotExploitable";
+                return "Proposed Not Exploitable";
             return "";
         }
         private string TrimFileName(string fileName)
