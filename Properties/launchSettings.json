@@ -2,7 +2,7 @@
   "profiles": {
     "CxAPI_Store": {
       "commandName": "Project",
-      "commandLineArgs": "--appsettings=C:\\scripts\\appsettings-cxLoyalty.json  --reports  --canned --report_name=\"ScanSummaryReport\"  --tenant=byProject  --file_name=ScanSummaryReport.csv --output_type=\"csv\" --query_filter=\"customfields like '%%BizOps%%'\""
+      "commandLineArgs": "--Files_to_DB --debug --appsettings=C:\\scripts\\CxAPI_store_New\\appsettings-local.json --verbose=1  --max_write=0 --initialize"
     }
   }
 }

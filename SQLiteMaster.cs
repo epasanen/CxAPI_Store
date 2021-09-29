@@ -57,6 +57,7 @@ namespace CxAPI_Store
         }
         #endregion
 
+        
         #region Instance Methods
 
         public void InsertParametersDataSetToSQLite(DataTable table, int blocksize = 500)
@@ -278,7 +279,7 @@ namespace CxAPI_Store
             CommitToSQLite(sqlValue);
             return;
         }
-        public bool CommitToSQLite(string sql, bool abort = true)
+        public bool CommitToSQLite(string sql, string op = "written", bool abort = true)
         {
 
             using (SQLiteConnection connection = new SQLiteConnection(_connection))
@@ -290,7 +291,7 @@ namespace CxAPI_Store
                 {
                     int count = cmd.ExecuteNonQuery();
                     localTrans.Commit();
-                    Console.WriteLine("\n{0} records are written to database", count);
+                    Console.WriteLine("\n{0} records {1} > {2}", GetTableName(sql),op,count);
                     return true;
                 }
                 catch (Exception ex)
@@ -298,7 +299,7 @@ namespace CxAPI_Store
                     localTrans.Rollback();
                     Console.WriteLine(ex.ToString());
                     Console.Write(sql);
-                    Console.WriteLine("\nDatabase updated failed.");
+                    Console.WriteLine("\n{0} update failed.", GetTableName(sql));
                     if (abort)
                         throw new ConstraintException();
                     return false;
@@ -858,7 +859,7 @@ namespace CxAPI_Store
             }
 
             if (token.debug && token.verbosity > 1) Console.Write("{0}", sql);
-            CommitToSQLite(sql);
+            CommitToSQLite(sql,"deleted");
         }
         public string BuildDeleteUsingPrimaryKeys(string tableName, Dictionary<string, object> primaryKeys)
         {
@@ -904,7 +905,7 @@ namespace CxAPI_Store
         {
             string SQL = String.Format("Create index idx_{0}_{1} on {0}({1})", tableName, column);
             if (token.debug && token.verbosity > 1) Console.WriteLine("Indexing: {0}", SQL);
-            return CommitToSQLite(SQL, false);
+            return CommitToSQLite(SQL, "indexed", false);
         }
         public bool AddDefaultIndexes()
         {
@@ -917,6 +918,14 @@ namespace CxAPI_Store
             AddDefaultIndex(ResultTable, "FileNameHash");
             AddDefaultIndex(ResultTable, "ResultSeverity");
             return true;
+        }
+        public string GetTableName(string sql)
+        {
+            if (sql.Contains("MetaData")) return "MetaData";
+            if (sql.Contains("Projects")) return "Projects";
+            if (sql.Contains("Scans")) return "Scans";
+            if (sql.Contains("Results")) return "Results";
+            return "database";
         }
 
         public void Dispose()

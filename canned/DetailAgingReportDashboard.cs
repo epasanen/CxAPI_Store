@@ -87,7 +87,7 @@ namespace CxAPI_Store
                     Vulnerability vulnerability = getResult.vulnerability[key];
 
                     agingOutput.status = vulnerability.VulnerabilityStatus.Contains("Closed") || vulnerability.VulnerabilityStatus.Contains("Fixed") ? "Closed" : "Open";
-                    agingOutput.Id = String.Format("{0}_{1}", vulnerability.SimilarityId, vulnerability.FileNameHash);
+                    agingOutput.Id = String.Format("{0}_{1}_{2}", vulnerability.SimilarityId, vulnerability.FileNameHash, vulnerability.ProjectId);
                     agingOutput.Url = "Null";
                     agingOutput.opened = agingOutput.status.Contains("Open") ? vulnerability.firstScan.ToString("yyyy-MM-dd") : "Null";
                     agingOutput.closed = agingOutput.status.Contains("Closed") ? vulnerability.firstScan.ToString("yyyy-MM-dd") : "Null";

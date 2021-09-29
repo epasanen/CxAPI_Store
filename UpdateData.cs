@@ -21,7 +21,7 @@ namespace CxAPI_Store
         SQLiteMaster lite;
         SortedDictionary<string, bool> allKeys;
         List<string> deleteList;
- 
+
         DateTime runDate;
 
         public UpdateData(resultClass token)
@@ -34,7 +34,7 @@ namespace CxAPI_Store
 
             allKeys = new SortedDictionary<string, bool>();
             deleteList = new List<string>();
- 
+
             lite = new SQLiteMaster(token);
             runDate = DateTime.UtcNow;
 
@@ -71,9 +71,9 @@ namespace CxAPI_Store
         private void PrimaryKeystoDictionary(DataTable table)
         {
             int rowcount = 0;
-            foreach(DataRow dr in table.Rows)
+            foreach (DataRow dr in table.Rows)
             {
-                string keyval = String.Join('-', dr.ItemArray);            
+                string keyval = String.Join('-', dr.ItemArray);
                 allKeys.Add(keyval, true);
                 if (rowcount++ > 10000)
                     break;
@@ -95,7 +95,7 @@ namespace CxAPI_Store
                 }
             }
         }
-        private bool TestPrimaryKeyinDictionary(Dictionary<string,object> primaryKeys)
+        private bool TestPrimaryKeyinDictionary(Dictionary<string, object> primaryKeys)
         {
             List<string> Keys = primaryKeys.Select(x => x.Value.ToString()).ToList();
             string cat = String.Join('-', Keys.ToArray());
@@ -196,17 +196,16 @@ namespace CxAPI_Store
             kvp.Add(new KeyValuePair<string, object>("FileName", fileName));
             return lite.TestforPrimaryKeys(MetaTable, kvp);
         }
-        private bool TestAndSetPrimaryKeys(string tableName, Dictionary<string,object> primaryKeys, bool delete = true)
+        private bool TestAndSetPrimaryKeys(string tableName, Dictionary<string, object> primaryKeys, bool delete = true)
         {
             if (!TestPrimaryKeyinDictionary(primaryKeys))
             {
                 AddPrimaryKeytoDictionary(primaryKeys);
-                deleteList.Add(lite.BuildDeleteUsingPrimaryKeys(tableName, primaryKeys));
-                return false;
             }
-            return true;
+            deleteList.Add(lite.BuildDeleteUsingPrimaryKeys(tableName, primaryKeys));
+            return false;
         }
-        private Dictionary<string,object> AddToDict(Dictionary<string,object> mapDictionary, object mapObject, List<object> primaryKeys)
+        private Dictionary<string, object> AddToDict(Dictionary<string, object> mapDictionary, object mapObject, List<object> primaryKeys)
         {
             string cat = String.Join('-', primaryKeys.ToArray());
             if (!mapDictionary.ContainsKey(cat))
@@ -226,7 +225,7 @@ namespace CxAPI_Store
                     Console.WriteLine("Replacing '{0}' in local ", cat);
                 }
             }
- 
+
             return mapDictionary;
         }
 
@@ -295,80 +294,105 @@ namespace CxAPI_Store
         {
             Dictionary<string, object> projects = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ProjectTable);
- //           Spinner.Run(() =>
- //           {
-                var jsonFiles = GetOrderedFileList(token.archival_path, "sast_project_info.*.log");
-                //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_project_info.*.log");
-                foreach (string filename in jsonFiles)
+            //           Spinner.Run(() =>
+            //           {
+            var jsonFiles = GetOrderedFileList(token.archival_path, "sast_project_info.*.log");
+            //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_project_info.*.log");
+            foreach (string filename in jsonFiles)
+            {
+                if (token.debug && token.verbosity > 0) Console.WriteLine("Processing file {0}", filename);
+
+                if (testMetaData(filename))
                 {
-                    if (testMetaData(filename))
+                    foreach (string content in File.ReadAllLines(filename))
                     {
-                        foreach (string content in File.ReadAllLines(filename))
+                        try
                         {
                             CxProjectJson project = JsonConvert.DeserializeObject<CxProjectJson>(content);
-                            if (!TestAndSetPrimaryKeys(ProjectTable, new Dictionary<string, object>() {{ "ProjectId", project.ProjectId }}, true))
+                            if (!TestAndSetPrimaryKeys(ProjectTable, new Dictionary<string, object>() { { "ProjectId", project.ProjectId } }, true))
                             {
                                 AddToDict(projects, project.convertObject(), new List<object>() { project.ProjectId });
                             }
                         }
-                        addObject(ProjectTable, new List<object>(projects.Values), filename);
-                        projects.Clear();
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Error parsing file: {0} // {1}", filename, ex.Message);
+                        }
                     }
+                    addObject(ProjectTable, new List<object>(projects.Values), filename);
+                    projects.Clear();
                 }
-//           });
+            }
             return true;
         }
         private bool getScans()
         {
             Dictionary<string, object> scans = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ScanTable);
-//            Spinner.Run(() =>
-//            {
-                var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_summary.*.log");
-                //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_summary.*.log");
-                foreach (string filename in jsonFiles)
+            //            Spinner.Run(() =>
+            //            {
+            var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_summary.*.log");
+            //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_summary.*.log");
+            foreach (string filename in jsonFiles)
+            {
+                if (token.debug && token.verbosity > 0) Console.WriteLine("Processing file {0}", filename);
+                if (testMetaData(filename))
                 {
-                    if (testMetaData(filename))
+                    foreach (string content in File.ReadAllLines(filename))
                     {
-                        foreach (string content in File.ReadAllLines(filename))
+                        try
                         {
                             CxScan scan = JsonConvert.DeserializeObject<CxScan>(content);
-                            if (!TestAndSetPrimaryKeys(ScanTable, new Dictionary<string, object>() { { "ProjectId", scan.ProjectId }, { "ScanId", scan.ScanId }, { "ScanFinished", scan.ScanFinished } }, true))
+                            if (!TestAndSetPrimaryKeys(ScanTable, new Dictionary<string, object>() { { "ProjectId", scan.ProjectId }, { "ScanId", scan.ScanId } }, true))
                             {
-                                AddToDict(scans, scan, new List<object>() { scan.ProjectId, scan.ScanId, scan.ScanFinished });
+                                AddToDict(scans, scan, new List<object>() { scan.ProjectId, scan.ScanId });
                             }
                         }
-                        addObject(ScanTable, new List<object>(scans.Values), filename);
-                        scans.Clear();
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Error parsing file: {0} // {1}", filename, ex.Message);
+                        }
                     }
+                    addObject(ScanTable, new List<object>(scans.Values), filename);
+                    scans.Clear();
                 }
-//            });
+            }
             return true;
         }
         private bool getResults()
         {
             Dictionary<string, object> results = new Dictionary<string, object>();
             Console.WriteLine("Loading table {0}", ResultTable);
-//            Spinner.Run(() =>
-//            {
-                var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_detail.*.log");
-                //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_detail.*.log");
-                foreach (string filename in jsonFiles)
+            //            Spinner.Run(() =>
+            //            {
+            var jsonFiles = GetOrderedFileList(token.archival_path, "sast_scan_detail.*.log");
+            //var jsonFiles = Directory.EnumerateFiles(token.archival_path, "sast_scan_detail.*.log")
+;
+            foreach (string filename in jsonFiles)
+            {
+                if (token.debug && token.verbosity > 0) Console.WriteLine("Processing file {0}", filename);
+
+                if (testMetaData(filename))
                 {
-                    if (testMetaData(filename))
+                    foreach (string content in File.ReadAllLines(filename))
                     {
-                        foreach (string content in File.ReadAllLines(filename))
+                        try
                         {
                             CxResult result = JsonConvert.DeserializeObject<CxResult>(content);
                             result.GenerateFileHash();
-                            if (!TestAndSetPrimaryKeys(ResultTable, new Dictionary<string, object>() { { "ProjectId", result.ProjectId }, { "VulnerabilityId", result.VulnerabilityId }, { "SimilarityId", result.SimilarityId },{ "FileNameHash", result.FileNameHash }}, true))
+                            if (!TestAndSetPrimaryKeys(ResultTable, new Dictionary<string, object>() { { "ProjectId", result.ProjectId }, { "VulnerabilityId", result.VulnerabilityId }, { "SimilarityId", result.SimilarityId }, { "FileNameHash", result.FileNameHash } }, true))
                                 AddToDict(results, result, new List<object>() { result.ProjectId, result.VulnerabilityId, result.SimilarityId, result.FileNameHash });
+
                         }
-                        addObject(ResultTable, new List<object>(results.Values), filename);
-                        results.Clear();
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Error parsing file: {0} // {1}", filename, ex.Message);
+                        }
                     }
+                    addObject(ResultTable, new List<object>(results.Values), filename);
+                    results.Clear();
                 }
-//            });
+            }
 
             return true;
         }

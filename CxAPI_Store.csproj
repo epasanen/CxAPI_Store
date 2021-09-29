@@ -4,10 +4,10 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
-    <AssemblyVersion>1.4.3.0</AssemblyVersion>
-    <FileVersion>1.4.3.0</FileVersion>
-    <Version>1.4.3</Version>
-    <PackageReleaseNotes>Add two new reports
+    <AssemblyVersion>1.6.0.0</AssemblyVersion>
+    <FileVersion>1.6.0.0</FileVersion>
+    <Version>1.6</Version>
+    <PackageReleaseNotes>Add error handling to parser
 </PackageReleaseNotes>
   </PropertyGroup>
 
